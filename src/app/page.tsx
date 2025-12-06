@@ -29,9 +29,7 @@ export default function Home() {
         </header>
 
         {/* Feed - directly showing projects like iOS app */}
-        <div className="px-4 py-4">
-          <FeedSection />
-        </div>
+        <FeedSection />
       </div>
     </SidebarLayout>
   );
