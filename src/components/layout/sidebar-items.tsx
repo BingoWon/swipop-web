@@ -1,4 +1,3 @@
-import { Chip } from "@heroui/react";
 import { type SidebarItem, SidebarItemType } from "./Sidebar";
 
 /**
@@ -55,17 +54,14 @@ export const sidebarItems: SidebarItem[] = [
         href: "/inbox",
         icon: "solar:bell-bold",
         title: "Inbox",
-        endContent: (
-            <Chip size="sm" variant="flat" color="primary">
-                3
-            </Chip>
-        ),
+        // Badge handled dynamically in AppSidebar
     },
     {
         key: "profile",
-        href: "/profile/me",
+        href: "/profile",
         icon: "solar:user-bold",
         title: "Profile",
+        // Redirects to user's own profile via route handler
     },
 ];
 

@@ -1,22 +1,20 @@
 import { createClient } from "@/lib/supabase/client";
 
+const supabase = () => createClient();
+
 /**
- * Service for likes and collections interactions
+ * Service for likes and collections
  * Matches iOS InteractionService.swift
  */
 export const InteractionService = {
-    // MARK: - Likes
-
-    async like(projectId: string, userId: string): Promise<void> {
-        const supabase = createClient();
-        await supabase
+    async like(projectId: string, userId: string) {
+        await supabase()
             .from("likes")
             .upsert({ project_id: projectId, user_id: userId }, { onConflict: "project_id,user_id" });
     },
 
-    async unlike(projectId: string, userId: string): Promise<void> {
-        const supabase = createClient();
-        await supabase
+    async unlike(projectId: string, userId: string) {
+        await supabase()
             .from("likes")
             .delete()
             .eq("project_id", projectId)
@@ -24,39 +22,28 @@ export const InteractionService = {
     },
 
     async isLiked(projectId: string, userId: string): Promise<boolean> {
-        const supabase = createClient();
-        const { count } = await supabase
+        const { count } = await supabase()
             .from("likes")
             .select("id", { count: "exact", head: true })
             .eq("project_id", projectId)
             .eq("user_id", userId);
-
         return (count ?? 0) > 0;
     },
 
     async toggleLike(projectId: string, userId: string): Promise<boolean> {
-        const isLiked = await this.isLiked(projectId, userId);
-        if (isLiked) {
-            await this.unlike(projectId, userId);
-            return false;
-        } else {
-            await this.like(projectId, userId);
-            return true;
-        }
+        const liked = await this.isLiked(projectId, userId);
+        liked ? await this.unlike(projectId, userId) : await this.like(projectId, userId);
+        return !liked;
     },
 
-    // MARK: - Collections
-
-    async collect(projectId: string, userId: string): Promise<void> {
-        const supabase = createClient();
-        await supabase
+    async collect(projectId: string, userId: string) {
+        await supabase()
             .from("collections")
             .upsert({ project_id: projectId, user_id: userId }, { onConflict: "project_id,user_id" });
     },
 
-    async uncollect(projectId: string, userId: string): Promise<void> {
-        const supabase = createClient();
-        await supabase
+    async uncollect(projectId: string, userId: string) {
+        await supabase()
             .from("collections")
             .delete()
             .eq("project_id", projectId)
@@ -64,24 +51,17 @@ export const InteractionService = {
     },
 
     async isCollected(projectId: string, userId: string): Promise<boolean> {
-        const supabase = createClient();
-        const { count } = await supabase
+        const { count } = await supabase()
             .from("collections")
             .select("id", { count: "exact", head: true })
             .eq("project_id", projectId)
             .eq("user_id", userId);
-
         return (count ?? 0) > 0;
     },
 
     async toggleCollect(projectId: string, userId: string): Promise<boolean> {
-        const isCollected = await this.isCollected(projectId, userId);
-        if (isCollected) {
-            await this.uncollect(projectId, userId);
-            return false;
-        } else {
-            await this.collect(projectId, userId);
-            return true;
-        }
+        const collected = await this.isCollected(projectId, userId);
+        collected ? await this.uncollect(projectId, userId) : await this.collect(projectId, userId);
+        return !collected;
     },
 };

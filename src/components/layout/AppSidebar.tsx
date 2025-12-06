@@ -21,14 +21,12 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
     const { user, profile, loading, signOut } = useAuth();
     const [unreadCount, setUnreadCount] = React.useState(0);
 
-    // Fetch unread notification count
     React.useEffect(() => {
         if (user) {
             ActivityService.fetchUnreadCount(user.id).then(setUnreadCount);
         }
     }, [user]);
 
-    // Determine selected key based on current path
     const getSelectedKey = () => {
         if (pathname === "/") return "home";
         if (pathname.startsWith("/create")) return "create";
@@ -39,20 +37,19 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
         return "home";
     };
 
-    // Update inbox badge with real count
-    const itemsWithBadge = sidebarItems.map((item) => {
-        if (item.key === "inbox" && unreadCount > 0) {
-            return {
+    // Add dynamic badge to inbox item
+    const itemsWithBadge = sidebarItems.map((item) =>
+        item.key === "inbox" && unreadCount > 0
+            ? {
                 ...item,
                 endContent: (
                     <span className="bg-primary text-primary-foreground text-tiny px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
                         {unreadCount}
                     </span>
                 ),
-            };
-        }
-        return item;
-    });
+            }
+            : item
+    );
 
     return (
         <div className="border-r border-divider relative flex h-full w-72 flex-col p-6 bg-content1">
@@ -73,7 +70,7 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
                 </div>
             ) : user && profile ? (
                 <Link
-                    href={`/profile/${profile.username}`}
+                    href="/profile"
                     className="flex items-center gap-3 px-2 hover:opacity-80 transition-opacity"
                 >
                     <Avatar
@@ -106,17 +103,14 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
 
             <Spacer y={6} />
 
-            {/* Main Navigation */}
+            {/* Navigation */}
             <ScrollShadow className="-mr-6 h-full max-h-full pr-6">
                 <Sidebar
                     defaultSelectedKey={getSelectedKey()}
                     items={itemsWithBadge}
                     isCompact={isCompact}
                 />
-
                 <Spacer y={6} />
-
-                {/* Secondary Navigation */}
                 <Sidebar
                     defaultSelectedKey=""
                     items={secondarySidebarItems}
@@ -126,7 +120,7 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
 
             <Spacer y={4} />
 
-            {/* Footer Actions */}
+            {/* Footer */}
             <div className="mt-auto flex flex-col gap-1">
                 <div className="flex items-center justify-between px-2">
                     {!isCompact && <span className="text-small text-default-400">Theme</span>}
@@ -137,9 +131,7 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
                     <Button
                         fullWidth={!isCompact}
                         className="text-default-500 data-[hover=true]:text-foreground justify-start"
-                        startContent={
-                            <Icon className="text-default-500" icon="solar:logout-2-bold" width={24} />
-                        }
+                        startContent={<Icon className="text-default-500" icon="solar:logout-2-bold" width={24} />}
                         variant="light"
                         onPress={signOut}
                     >
@@ -151,24 +143,12 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
                         href="/login"
                         fullWidth={!isCompact}
                         className="text-default-500 data-[hover=true]:text-foreground justify-start"
-                        startContent={
-                            <Icon className="text-default-500" icon="solar:login-2-bold" width={24} />
-                        }
+                        startContent={<Icon className="text-default-500" icon="solar:login-2-bold" width={24} />}
                         variant="light"
                     >
                         {!isCompact && "Sign In"}
                     </Button>
                 )}
-
-                <Button
-                    className="text-default-500 data-[hover=true]:text-foreground justify-start"
-                    startContent={
-                        <Icon className="text-default-500" icon="solar:info-circle-bold" width={24} />
-                    }
-                    variant="light"
-                >
-                    {!isCompact && "Help & Info"}
-                </Button>
             </div>
         </div>
     );
