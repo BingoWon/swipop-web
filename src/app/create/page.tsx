@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function CreatePage() {
-    redirect("/create/chat");
+	redirect("/create/chat");
 }
