@@ -9,12 +9,9 @@ import {
     Tabs,
     Tab,
     Input,
-    Chip,
-    Card,
-    CardBody,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { MainNavbar } from "@/components/layout/Navbar";
+import { SidebarLayout } from "@/components/layout/SidebarLayout";
 
 const ideas = [
     {
@@ -53,9 +50,8 @@ h1 {
   font-family: sans-serif;
 }`);
     const [jsContent, setJsContent] = React.useState("");
-    const [activeTab, setActiveTab] = React.useState("html");
+    const [activeTab, setActiveTab] = React.useState("chat");
 
-    // Build preview
     const previewSrcDoc = `
     <!DOCTYPE html>
     <html>
@@ -76,10 +72,8 @@ h1 {
     };
 
     return (
-        <div className="min-h-screen bg-background flex flex-col">
-            <MainNavbar />
-
-            <main className="flex-1 flex flex-col max-w-7xl mx-auto w-full p-4">
+        <SidebarLayout>
+            <div className="min-h-screen flex flex-col p-4">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex-1 max-w-md">
@@ -104,58 +98,56 @@ h1 {
                     </div>
                 </div>
 
-                {/* Main Content */}
-                <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
-                    {/* Editor Panel */}
-                    <div className="flex flex-col min-h-0 rounded-large border border-default-200 bg-content1 overflow-hidden">
-                        {/* AI Prompt Section */}
-                        <div className="p-4 border-b border-default-200">
-                            <div className="flex flex-col gap-3">
-                                <ScrollShadow
-                                    hideScrollBar
-                                    className="flex flex-nowrap gap-2"
-                                    orientation="horizontal"
-                                >
-                                    {ideas.map((idea, index) => (
-                                        <Button
-                                            key={index}
-                                            className="flex h-14 flex-col items-start gap-0 shrink-0"
-                                            variant="flat"
-                                            onPress={() => handleIdeaClick(idea)}
-                                        >
-                                            <p className="text-small">{idea.title}</p>
-                                            <p className="text-tiny text-default-500">{idea.description}</p>
-                                        </Button>
-                                    ))}
-                                </ScrollShadow>
+                {/* Main Content - Tabs */}
+                <Tabs
+                    selectedKey={activeTab}
+                    onSelectionChange={(key) => setActiveTab(key as string)}
+                    classNames={{
+                        tabList: "mb-4",
+                    }}
+                >
+                    {/* Chat Tab */}
+                    <Tab
+                        key="chat"
+                        title={
+                            <div className="flex items-center gap-2">
+                                <Icon icon="solar:chat-round-dots-bold" />
+                                <span>Chat</span>
+                            </div>
+                        }
+                    >
+                        <div className="flex flex-col gap-4">
+                            <ScrollShadow
+                                hideScrollBar
+                                className="flex flex-nowrap gap-2"
+                                orientation="horizontal"
+                            >
+                                {ideas.map((idea, index) => (
+                                    <Button
+                                        key={index}
+                                        className="flex h-14 flex-col items-start gap-0 shrink-0"
+                                        variant="flat"
+                                        onPress={() => handleIdeaClick(idea)}
+                                    >
+                                        <p className="text-small">{idea.title}</p>
+                                        <p className="text-tiny text-default-500">{idea.description}</p>
+                                    </Button>
+                                ))}
+                            </ScrollShadow>
 
-                                <div className="rounded-medium bg-default-100 hover:bg-default-200/70 flex flex-col transition-colors">
-                                    <Textarea
-                                        placeholder="Describe what you want to create..."
-                                        minRows={2}
-                                        value={prompt}
-                                        onValueChange={setPrompt}
-                                        classNames={{
-                                            inputWrapper: "bg-transparent shadow-none",
-                                            input: "text-medium",
-                                        }}
-                                        endContent={
-                                            <Tooltip content="Send to AI">
-                                                <Button
-                                                    isIconOnly
-                                                    color={prompt ? "primary" : "default"}
-                                                    isDisabled={!prompt}
-                                                    radius="lg"
-                                                    size="sm"
-                                                    variant="solid"
-                                                    className="absolute bottom-2 right-2"
-                                                >
-                                                    <Icon icon="solar:arrow-up-linear" className="text-lg" />
-                                                </Button>
-                                            </Tooltip>
-                                        }
-                                    />
-                                    <div className="flex items-center gap-2 px-3 pb-3">
+                            <div className="rounded-medium bg-default-100 hover:bg-default-200/70 flex flex-col transition-colors">
+                                <Textarea
+                                    placeholder="Describe what you want to create..."
+                                    minRows={4}
+                                    value={prompt}
+                                    onValueChange={setPrompt}
+                                    classNames={{
+                                        inputWrapper: "bg-transparent shadow-none",
+                                        input: "text-medium",
+                                    }}
+                                />
+                                <div className="flex items-center justify-between px-3 pb-3">
+                                    <div className="flex gap-2">
                                         <Button
                                             size="sm"
                                             variant="flat"
@@ -171,102 +163,33 @@ h1 {
                                             Templates
                                         </Button>
                                     </div>
+                                    <Tooltip content="Send to AI">
+                                        <Button
+                                            isIconOnly
+                                            color={prompt ? "primary" : "default"}
+                                            isDisabled={!prompt}
+                                            radius="lg"
+                                            size="sm"
+                                        >
+                                            <Icon icon="solar:arrow-up-linear" className="text-lg" />
+                                        </Button>
+                                    </Tooltip>
                                 </div>
                             </div>
                         </div>
+                    </Tab>
 
-                        {/* Code Editor Tabs */}
-                        <div className="flex-1 flex flex-col min-h-0">
-                            <Tabs
-                                selectedKey={activeTab}
-                                onSelectionChange={(key) => setActiveTab(key as string)}
-                                classNames={{
-                                    tabList: "px-4 pt-2",
-                                    panel: "flex-1 p-0",
-                                }}
-                            >
-                                <Tab
-                                    key="html"
-                                    title={
-                                        <div className="flex items-center gap-2">
-                                            <Icon icon="vscode-icons:file-type-html" />
-                                            <span>HTML</span>
-                                        </div>
-                                    }
-                                >
-                                    <Textarea
-                                        value={htmlContent}
-                                        onValueChange={setHtmlContent}
-                                        minRows={15}
-                                        classNames={{
-                                            base: "h-full",
-                                            inputWrapper: "h-full rounded-none bg-default-50",
-                                            input: "font-mono text-sm",
-                                        }}
-                                    />
-                                </Tab>
-                                <Tab
-                                    key="css"
-                                    title={
-                                        <div className="flex items-center gap-2">
-                                            <Icon icon="vscode-icons:file-type-css" />
-                                            <span>CSS</span>
-                                        </div>
-                                    }
-                                >
-                                    <Textarea
-                                        value={cssContent}
-                                        onValueChange={setCssContent}
-                                        minRows={15}
-                                        classNames={{
-                                            base: "h-full",
-                                            inputWrapper: "h-full rounded-none bg-default-50",
-                                            input: "font-mono text-sm",
-                                        }}
-                                    />
-                                </Tab>
-                                <Tab
-                                    key="js"
-                                    title={
-                                        <div className="flex items-center gap-2">
-                                            <Icon icon="vscode-icons:file-type-js" />
-                                            <span>JavaScript</span>
-                                        </div>
-                                    }
-                                >
-                                    <Textarea
-                                        value={jsContent}
-                                        onValueChange={setJsContent}
-                                        minRows={15}
-                                        placeholder="// Add your JavaScript here"
-                                        classNames={{
-                                            base: "h-full",
-                                            inputWrapper: "h-full rounded-none bg-default-50",
-                                            input: "font-mono text-sm",
-                                        }}
-                                    />
-                                </Tab>
-                            </Tabs>
-                        </div>
-                    </div>
-
-                    {/* Preview Panel */}
-                    <div className="flex flex-col min-h-0 rounded-large border border-default-200 overflow-hidden">
-                        <div className="flex items-center justify-between px-4 py-2 bg-content1 border-b border-default-200">
-                            <span className="text-small font-medium">Preview</span>
-                            <div className="flex gap-1">
-                                <Button isIconOnly size="sm" variant="light">
-                                    <Icon icon="solar:smartphone-linear" />
-                                </Button>
-                                <Button isIconOnly size="sm" variant="light">
-                                    <Icon icon="solar:tablet-linear" />
-                                </Button>
-                                <Button isIconOnly size="sm" variant="flat">
-                                    <Icon icon="solar:monitor-linear" />
-                                </Button>
+                    {/* Preview Tab */}
+                    <Tab
+                        key="preview"
+                        title={
+                            <div className="flex items-center gap-2">
+                                <Icon icon="solar:play-bold" />
+                                <span>Preview</span>
                             </div>
-                        </div>
-                        <div className="flex-1 bg-white dark:bg-black">
+                        }
+                    >
+                        <div className="rounded-large border border-default-200 overflow-hidden h-[500px]">
                             <iframe
                                 srcDoc={previewSrcDoc}
                                 sandbox="allow-scripts"
@@ -274,8 +197,72 @@ h1 {
                                 title="Preview"
                             />
                         </div>
-                    </div>
-                </div>
+                    </Tab>
+
+                    {/* HTML Tab */}
+                    <Tab
+                        key="html"
+                        title={
+                            <div className="flex items-center gap-2">
+                                <Icon icon="vscode-icons:file-type-html" />
+                                <span>HTML</span>
+                            </div>
+                        }
+                    >
+                        <Textarea
+                            value={htmlContent}
+                            onValueChange={setHtmlContent}
+                            minRows={20}
+                            classNames={{
+                                inputWrapper: "bg-default-50",
+                                input: "font-mono text-sm",
+                            }}
+                        />
+                    </Tab>
+
+                    {/* CSS Tab */}
+                    <Tab
+                        key="css"
+                        title={
+                            <div className="flex items-center gap-2">
+                                <Icon icon="vscode-icons:file-type-css" />
+                                <span>CSS</span>
+                            </div>
+                        }
+                    >
+                        <Textarea
+                            value={cssContent}
+                            onValueChange={setCssContent}
+                            minRows={20}
+                            classNames={{
+                                inputWrapper: "bg-default-50",
+                                input: "font-mono text-sm",
+                            }}
+                        />
+                    </Tab>
+
+                    {/* JavaScript Tab */}
+                    <Tab
+                        key="js"
+                        title={
+                            <div className="flex items-center gap-2">
+                                <Icon icon="vscode-icons:file-type-js" />
+                                <span>JavaScript</span>
+                            </div>
+                        }
+                    >
+                        <Textarea
+                            value={jsContent}
+                            onValueChange={setJsContent}
+                            minRows={20}
+                            placeholder="// Add your JavaScript here"
+                            classNames={{
+                                inputWrapper: "bg-default-50",
+                                input: "font-mono text-sm",
+                            }}
+                        />
+                    </Tab>
+                </Tabs>
 
                 {/* Footer Status */}
                 <div className="flex items-center justify-between mt-4 text-small text-default-400">
@@ -289,7 +276,7 @@ h1 {
                         <span>Auto-saved</span>
                     </div>
                 </div>
-            </main>
-        </div>
+            </div>
+        </SidebarLayout>
     );
 }
