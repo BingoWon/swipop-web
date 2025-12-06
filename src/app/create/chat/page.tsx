@@ -1,16 +1,16 @@
 "use client";
 
 import React from "react";
-import { Button, Avatar, ScrollShadow, Tooltip } from "@heroui/react";
+import { Button, Avatar, ScrollShadow, Tooltip, Textarea } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { cn } from "@heroui/react";
 import { useCreate, type Message } from "../layout";
 
 const ideas = [
-    { title: "Create a neon button", description: "with glow effect" },
-    { title: "Build animated gradient", description: "smooth transitions" },
-    { title: "Design loading spinner", description: "minimal and smooth" },
-    { title: "Make 3D card hover", description: "with perspective" },
+    "Create a neon button with glow effect",
+    "Build an animated gradient background",
+    "Design a minimal loading spinner",
+    "Make a 3D card hover effect",
 ];
 
 export default function ChatPage() {
@@ -76,10 +76,6 @@ export default function ChatPage() {
         }, 1500);
     };
 
-    const handleIdeaClick = (idea: { title: string; description: string }) => {
-        setPrompt(`${idea.title} - ${idea.description}`);
-    };
-
     React.useEffect(() => {
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }, [messages]);
@@ -97,9 +93,7 @@ export default function ChatPage() {
                         </p>
                     </div>
                 ) : (
-                    messages.map((msg) => (
-                        <MessageCard key={msg.id} message={msg} />
-                    ))
+                    messages.map((msg) => <MessageCard key={msg.id} message={msg} />)
                 )}
                 {isGenerating && (
                     <div className="flex gap-3">
@@ -121,58 +115,57 @@ export default function ChatPage() {
 
             {/* Input Area */}
             <div className="border-t border-divider p-4 space-y-3">
-                {/* Ideas */}
+                {/* Ideas - Simple single-line buttons following HeroUI pattern */}
                 <ScrollShadow hideScrollBar orientation="horizontal" className="flex gap-2">
                     {ideas.map((idea, i) => (
-                        <Button
-                            key={i}
-                            variant="flat"
-                            size="sm"
-                            className="shrink-0 h-auto py-2 flex-col items-start"
-                            onPress={() => handleIdeaClick(idea)}
-                        >
-                            <span className="text-small font-medium">{idea.title}</span>
-                            <span className="text-tiny text-default-400">{idea.description}</span>
+                        <Button key={i} variant="flat" onPress={() => setPrompt(idea)} className="shrink-0">
+                            {idea}
                         </Button>
                     ))}
                 </ScrollShadow>
 
-                {/* Prompt Form */}
-                <form onSubmit={handleSubmit}>
-                    <div className="rounded-medium bg-default-100 hover:bg-default-200/70 transition-colors">
-                        <textarea
-                            value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
-                            placeholder="Describe what you want to create..."
-                            className="w-full bg-transparent resize-none p-4 text-medium outline-none min-h-[80px]"
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSubmit();
-                                }
-                            }}
-                        />
-                        <div className="flex items-center justify-between px-4 pb-3">
-                            <div className="flex gap-2">
-                                <Button size="sm" variant="flat" startContent={<Icon icon="solar:gallery-bold" className="text-default-500" />}>
-                                    Templates
+                {/* Prompt Form - Using HeroUI Textarea */}
+                <form onSubmit={handleSubmit} className="rounded-medium bg-default-100 hover:bg-default-200/70 transition-colors">
+                    <Textarea
+                        value={prompt}
+                        onValueChange={setPrompt}
+                        placeholder="Describe what you want to create..."
+                        minRows={3}
+                        variant="flat"
+                        radius="lg"
+                        classNames={{
+                            inputWrapper: "bg-transparent shadow-none",
+                            input: "py-0 text-medium",
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSubmit();
+                            }
+                        }}
+                    />
+                    <div className="flex items-center justify-between px-4 pb-3">
+                        <Button
+                            size="sm"
+                            variant="flat"
+                            startContent={<Icon icon="solar:gallery-bold" className="text-default-500" />}
+                        >
+                            Templates
+                        </Button>
+                        <div className="flex items-center gap-2">
+                            <span className="text-tiny text-default-400">{prompt.length}/2000</span>
+                            <Tooltip content="Send">
+                                <Button
+                                    isIconOnly
+                                    color={prompt.trim() ? "primary" : "default"}
+                                    isDisabled={!prompt.trim() || isGenerating}
+                                    radius="lg"
+                                    size="sm"
+                                    type="submit"
+                                >
+                                    <Icon icon="solar:arrow-up-linear" className="text-lg" />
                                 </Button>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-tiny text-default-400">{prompt.length}/2000</span>
-                                <Tooltip content="Send">
-                                    <Button
-                                        isIconOnly
-                                        color={prompt.trim() ? "primary" : "default"}
-                                        isDisabled={!prompt.trim() || isGenerating}
-                                        radius="lg"
-                                        size="sm"
-                                        type="submit"
-                                    >
-                                        <Icon icon="solar:arrow-up-linear" className="text-lg" />
-                                    </Button>
-                                </Tooltip>
-                            </div>
+                            </Tooltip>
                         </div>
                     </div>
                 </form>
@@ -190,11 +183,7 @@ function MessageCard({ message }: { message: Message }) {
     return (
         <div className={cn("flex gap-3", isUser && "flex-row-reverse")}>
             <Avatar
-                src={
-                    isUser
-                        ? undefined
-                        : "https://nextuipro.nyc3.cdn.digitaloceanspaces.com/components-images/avatar_ai.png"
-                }
+                src={isUser ? undefined : "https://nextuipro.nyc3.cdn.digitaloceanspaces.com/components-images/avatar_ai.png"}
                 showFallback
                 name={isUser ? "U" : "AI"}
                 size="sm"
