@@ -187,7 +187,11 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
 										items={item.items}
 										variant="flat"
 									>
-										{item.items.map(renderItem)}
+										{item.items.map((subItem) => (
+											<React.Fragment key={subItem.key}>
+												{renderItem(subItem)}
+											</React.Fragment>
+										))}
 									</Listbox>
 								) : (
 									renderItem(item)
@@ -301,7 +305,11 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
 							showDivider={isCompact}
 							title={item.title}
 						>
-							{item.items.map(renderItem)}
+							{item.items.map((subItem) => (
+								<React.Fragment key={subItem.key}>
+									{renderItem(subItem)}
+								</React.Fragment>
+							))}
 						</ListboxSection>
 					) : (
 						renderItem(item)
