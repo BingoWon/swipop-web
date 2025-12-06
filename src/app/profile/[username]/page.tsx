@@ -10,87 +10,77 @@ import {
     Tabs,
     Tab,
     Chip,
-    Skeleton,
+    Spinner,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { ProjectCard } from "@/components/project/ProjectCard";
+import { createClient } from "@/lib/supabase/client";
 import type { Profile, Project } from "@/lib/types";
-
-// Mock data
-const mockProfile: Profile = {
-    id: "1",
-    username: "creative_dev",
-    display_name: "Creative Developer",
-    avatar_url: null,
-    bio: "Building cool stuff with code ✨ Creator of interactive web experiences.",
-    links: [
-        { title: "GitHub", url: "https://github.com" },
-        { title: "Twitter", url: "https://twitter.com" },
-    ],
-    created_at: "2024-01-01",
-    updated_at: "2024-01-01",
-};
-
-const mockProjects: Project[] = [
-    {
-        id: "1",
-        user_id: "1",
-        title: "Neon Pulse Animation",
-        description: "A mesmerizing neon animation effect",
-        html_content: "<div class='pulse'></div>",
-        css_content: ".pulse { animation: pulse 2s infinite; }",
-        js_content: null,
-        thumbnail_url: null,
-        thumbnail_aspect_ratio: 1.0,
-        tags: ["animation", "css", "neon"],
-        chat_messages: null,
-        is_published: true,
-        view_count: 1234,
-        like_count: 567,
-        collect_count: 45,
-        comment_count: 89,
-        share_count: 23,
-        created_at: "2024-01-15",
-        updated_at: "2024-01-15",
-    },
-    {
-        id: "2",
-        user_id: "1",
-        title: "Particle Storm",
-        description: "Interactive particle system with canvas",
-        html_content: "<canvas id='canvas'></canvas>",
-        css_content: "canvas { width: 100%; height: 100%; }",
-        js_content: "// particle code",
-        thumbnail_url: null,
-        thumbnail_aspect_ratio: 0.75,
-        tags: ["particles", "canvas", "javascript"],
-        chat_messages: null,
-        is_published: true,
-        view_count: 2345,
-        like_count: 890,
-        collect_count: 78,
-        comment_count: 123,
-        share_count: 45,
-        created_at: "2024-02-01",
-        updated_at: "2024-02-01",
-    },
-];
 
 export default function ProfilePage({
     params,
 }: {
     params: Promise<{ username: string }>;
 }) {
-    const [profile] = React.useState<Profile | null>(mockProfile);
-    const [projects] = React.useState<Project[]>(mockProjects);
+    const [profile, setProfile] = React.useState<Profile | null>(null);
+    const [projects, setProjects] = React.useState<Project[]>([]);
+    const [loading, setLoading] = React.useState(true);
     const [isFollowing, setIsFollowing] = React.useState(false);
+    const [username, setUsername] = React.useState<string>("");
+
+    React.useEffect(() => {
+        async function loadData() {
+            const { username: u } = await params;
+            setUsername(u);
+
+            const supabase = createClient();
+
+            // Fetch profile
+            const { data: profileData, error: profileError } = await supabase
+                .from("profiles")
+                .select("*")
+                .eq("username", u)
+                .single();
+
+            if (profileError) {
+                console.error("Error fetching profile:", profileError);
+                setLoading(false);
+                return;
+            }
+
+            setProfile(profileData);
+
+            // Fetch user's projects
+            const { data: projectsData } = await supabase
+                .from("projects")
+                .select("*")
+                .eq("user_id", profileData.id)
+                .eq("is_published", true)
+                .order("created_at", { ascending: false });
+
+            setProjects(projectsData || []);
+            setLoading(false);
+        }
+
+        loadData();
+    }, [params]);
+
+    if (loading) {
+        return (
+            <SidebarLayout>
+                <div className="flex items-center justify-center min-h-screen">
+                    <Spinner size="lg" />
+                </div>
+            </SidebarLayout>
+        );
+    }
 
     if (!profile) {
         return (
             <SidebarLayout>
-                <div className="p-4">
-                    <Skeleton className="h-[200px] rounded-large" />
+                <div className="flex items-center justify-center min-h-screen">
+                    <p className="text-default-500">User not found</p>
                 </div>
             </SidebarLayout>
         );
@@ -98,7 +88,7 @@ export default function ProfilePage({
 
     return (
         <SidebarLayout>
-            <div className="min-h-screen p-4 md:p-8">
+            <div className="min-h-screen px-4 py-4">
                 <div className="max-w-4xl mx-auto">
                     <Card className="w-full">
                         <CardHeader className="relative flex h-[120px] flex-col justify-end overflow-visible bg-gradient-to-br from-pink-300 via-purple-300 to-indigo-400">
@@ -175,20 +165,6 @@ export default function ProfilePage({
                                         &nbsp;
                                         <span className="text-small text-default-400">Projects</span>
                                     </p>
-                                    <p>
-                                        <span className="text-small text-default-500 font-medium">
-                                            128
-                                        </span>
-                                        &nbsp;
-                                        <span className="text-small text-default-400">Following</span>
-                                    </p>
-                                    <p>
-                                        <span className="text-small text-default-500 font-medium">
-                                            2.5K
-                                        </span>
-                                        &nbsp;
-                                        <span className="text-small text-default-400">Followers</span>
-                                    </p>
                                 </div>
                             </div>
 
@@ -207,11 +183,17 @@ export default function ProfilePage({
                                         </div>
                                     }
                                 >
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        {projects.map((project) => (
-                                            <ProjectCard key={project.id} project={project} />
-                                        ))}
-                                    </div>
+                                    {projects.length > 0 ? (
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                            {projects.map((project) => (
+                                                <ProjectCard key={project.id} project={project} />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 text-default-400">
+                                            <p>No projects yet</p>
+                                        </div>
+                                    )}
                                 </Tab>
                                 <Tab
                                     key="likes"
@@ -223,28 +205,7 @@ export default function ProfilePage({
                                     }
                                 >
                                     <div className="text-center py-8 text-default-400">
-                                        <Icon
-                                            icon="solar:heart-broken-bold"
-                                            className="text-4xl mx-auto mb-2"
-                                        />
-                                        <p>No liked projects yet</p>
-                                    </div>
-                                </Tab>
-                                <Tab
-                                    key="collections"
-                                    title={
-                                        <div className="flex items-center gap-2">
-                                            <Icon icon="solar:bookmark-bold" />
-                                            <span>Collections</span>
-                                        </div>
-                                    }
-                                >
-                                    <div className="text-center py-8 text-default-400">
-                                        <Icon
-                                            icon="solar:bookmark-bold"
-                                            className="text-4xl mx-auto mb-2"
-                                        />
-                                        <p>No collections yet</p>
+                                        <p>No liked projects</p>
                                     </div>
                                 </Tab>
                             </Tabs>

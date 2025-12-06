@@ -10,117 +10,13 @@ import {
     Tab,
     Chip,
     ScrollShadow,
+    Spinner,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
+import { createClient } from "@/lib/supabase/client";
 import type { Activity, Profile, Project } from "@/lib/types";
-
-// Mock data
-const mockActivities: (Activity & { actor?: Profile; project?: Project })[] = [
-    {
-        id: "1",
-        user_id: "1",
-        actor_id: "2",
-        type: "like",
-        project_id: "1",
-        comment_id: null,
-        is_read: false,
-        created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        actor: {
-            id: "2",
-            username: "design_lover",
-            display_name: "Design Lover",
-            avatar_url: null,
-            bio: null,
-            links: [],
-            created_at: "",
-            updated_at: "",
-        },
-        project: {
-            id: "1",
-            user_id: "1",
-            title: "Neon Pulse Animation",
-            description: null,
-            html_content: null,
-            css_content: null,
-            js_content: null,
-            thumbnail_url: null,
-            thumbnail_aspect_ratio: 1,
-            tags: null,
-            chat_messages: null,
-            is_published: true,
-            view_count: 0,
-            like_count: 0,
-            collect_count: 0,
-            comment_count: 0,
-            share_count: 0,
-            created_at: "",
-            updated_at: "",
-        },
-    },
-    {
-        id: "2",
-        user_id: "1",
-        actor_id: "3",
-        type: "follow",
-        project_id: null,
-        comment_id: null,
-        is_read: false,
-        created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-        actor: {
-            id: "3",
-            username: "code_master",
-            display_name: "Code Master",
-            avatar_url: null,
-            bio: null,
-            links: [],
-            created_at: "",
-            updated_at: "",
-        },
-    },
-    {
-        id: "3",
-        user_id: "1",
-        actor_id: "4",
-        type: "comment",
-        project_id: "1",
-        comment_id: "1",
-        is_read: true,
-        created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-        actor: {
-            id: "4",
-            username: "css_wizard",
-            display_name: "CSS Wizard",
-            avatar_url: null,
-            bio: null,
-            links: [],
-            created_at: "",
-            updated_at: "",
-        },
-        project: {
-            id: "1",
-            user_id: "1",
-            title: "Neon Pulse Animation",
-            description: null,
-            html_content: null,
-            css_content: null,
-            js_content: null,
-            thumbnail_url: null,
-            thumbnail_aspect_ratio: 1,
-            tags: null,
-            chat_messages: null,
-            is_published: true,
-            view_count: 0,
-            like_count: 0,
-            collect_count: 0,
-            comment_count: 0,
-            share_count: 0,
-            created_at: "",
-            updated_at: "",
-        },
-    },
-];
 
 const activityConfig = {
     like: {
@@ -160,12 +56,62 @@ function formatTimeAgo(dateString: string): string {
 }
 
 export default function InboxPage() {
-    const [activities] = React.useState(mockActivities);
+    const [activities, setActivities] = React.useState<
+        (Activity & { actor?: Profile; project?: Project })[]
+    >([]);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        async function fetchActivities() {
+            const supabase = createClient();
+
+            // Get current user
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+
+            // Fetch activities for current user
+            const { data, error } = await supabase
+                .from("activities")
+                .select(`
+          *,
+          actor:profiles!activities_actor_id_fkey (
+            id,
+            username,
+            display_name,
+            avatar_url
+          ),
+          project:projects!activities_project_id_fkey (
+            id,
+            title
+          )
+        `)
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: false })
+                .limit(50);
+
+            if (error) {
+                console.error("Error fetching activities:", error);
+            } else {
+                setActivities(data || []);
+            }
+
+            setLoading(false);
+        }
+
+        fetchActivities();
+    }, []);
+
     const unreadCount = activities.filter((a) => !a.is_read).length;
 
     return (
         <SidebarLayout>
-            <div className="min-h-screen p-4 md:p-8">
+            <div className="min-h-screen px-4 py-4">
                 <div className="max-w-2xl mx-auto">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-6">
@@ -211,33 +157,31 @@ export default function InboxPage() {
                                 </div>
                             }
                         />
-                        <Tab
-                            key="follows"
-                            title={
-                                <div className="flex items-center gap-2">
-                                    <Icon icon="solar:users-group-rounded-bold" />
-                                    <span>Follows</span>
-                                </div>
-                            }
-                        />
                     </Tabs>
 
                     {/* Activities List */}
                     <Card>
                         <CardBody className="p-0">
-                            <ScrollShadow className="max-h-[600px]">
-                                {activities.length === 0 ? (
-                                    <div className="text-center py-12">
-                                        <Icon
-                                            icon="solar:inbox-bold"
-                                            className="text-5xl text-default-300 mx-auto mb-3"
-                                        />
-                                        <p className="text-default-400">No notifications yet</p>
-                                    </div>
-                                ) : (
+                            {loading ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Spinner size="lg" />
+                                </div>
+                            ) : activities.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <Icon
+                                        icon="solar:inbox-bold"
+                                        className="text-5xl text-default-300 mx-auto mb-3"
+                                    />
+                                    <p className="text-default-400">No notifications yet</p>
+                                </div>
+                            ) : (
+                                <ScrollShadow className="max-h-[600px]">
                                     <div className="divide-y divide-default-100">
                                         {activities.map((activity) => {
-                                            const config = activityConfig[activity.type];
+                                            const config =
+                                                activityConfig[
+                                                activity.type as keyof typeof activityConfig
+                                                ] || activityConfig.like;
                                             return (
                                                 <div
                                                     key={activity.id}
@@ -294,20 +238,6 @@ export default function InboxPage() {
                                                         </p>
                                                     </div>
 
-                                                    {activity.project && (
-                                                        <Link
-                                                            href={`/project/${activity.project.id}`}
-                                                            className="flex-shrink-0"
-                                                        >
-                                                            <div className="w-12 h-12 rounded-medium bg-default-100 flex items-center justify-center">
-                                                                <Icon
-                                                                    icon="solar:code-bold"
-                                                                    className="text-default-400"
-                                                                />
-                                                            </div>
-                                                        </Link>
-                                                    )}
-
                                                     {activity.type === "follow" && (
                                                         <Button size="sm" color="primary" variant="flat">
                                                             Follow
@@ -317,8 +247,8 @@ export default function InboxPage() {
                                             );
                                         })}
                                     </div>
-                                )}
-                            </ScrollShadow>
+                                </ScrollShadow>
+                            )}
                         </CardBody>
                     </Card>
                 </div>

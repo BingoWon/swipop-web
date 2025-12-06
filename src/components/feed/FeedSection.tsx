@@ -2,260 +2,76 @@
 
 import React from "react";
 import { ResponsiveMasonryGrid } from "./MasonryGrid";
+import { createClient } from "@/lib/supabase/client";
+import { Spinner } from "@heroui/react";
 import type { Project } from "@/lib/types";
 
-// Mock data with varied aspect ratios to demonstrate masonry effect
-const mockProjects: Project[] = [
-    {
-        id: "1",
-        user_id: "1",
-        title: "Neon Pulse Animation",
-        description: "A mesmerizing neon animation effect with CSS",
-        html_content: null,
-        css_content: null,
-        js_content: null,
-        thumbnail_url: null,
-        thumbnail_aspect_ratio: 1.0, // Square
-        tags: ["animation", "css", "neon"],
-        chat_messages: null,
-        is_published: true,
-        view_count: 1234,
-        like_count: 567,
-        collect_count: 45,
-        comment_count: 89,
-        share_count: 23,
-        created_at: "2024-01-15",
-        updated_at: "2024-01-15",
-        creator: {
-            id: "1",
-            username: "creative_dev",
-            display_name: "Creative Dev",
-            avatar_url: null,
-            bio: null,
-            links: [],
-            created_at: "",
-            updated_at: "",
-        },
-    },
-    {
-        id: "2",
-        user_id: "2",
-        title: "Glassmorphism Card",
-        description: "Beautiful glassmorphism effect",
-        html_content: null,
-        css_content: null,
-        js_content: null,
-        thumbnail_url: null,
-        thumbnail_aspect_ratio: 0.66, // Tall portrait
-        tags: ["glassmorphism", "css", "card"],
-        chat_messages: null,
-        is_published: true,
-        view_count: 2345,
-        like_count: 890,
-        collect_count: 78,
-        comment_count: 123,
-        share_count: 45,
-        created_at: "2024-02-01",
-        updated_at: "2024-02-01",
-        creator: {
-            id: "2",
-            username: "ui_master",
-            display_name: "UI Master",
-            avatar_url: null,
-            bio: null,
-            links: [],
-            created_at: "",
-            updated_at: "",
-        },
-    },
-    {
-        id: "3",
-        user_id: "3",
-        title: "Particle Storm",
-        description: "Interactive particle system",
-        html_content: null,
-        css_content: null,
-        js_content: null,
-        thumbnail_url: null,
-        thumbnail_aspect_ratio: 1.5, // Wide landscape
-        tags: ["particles", "canvas", "javascript"],
-        chat_messages: null,
-        is_published: true,
-        view_count: 3456,
-        like_count: 1234,
-        collect_count: 123,
-        comment_count: 234,
-        share_count: 67,
-        created_at: "2024-02-15",
-        updated_at: "2024-02-15",
-        creator: {
-            id: "3",
-            username: "coder123",
-            display_name: "Coder 123",
-            avatar_url: null,
-            bio: null,
-            links: [],
-            created_at: "",
-            updated_at: "",
-        },
-    },
-    {
-        id: "4",
-        user_id: "4",
-        title: "Gradient Background",
-        description: "Animated gradient that moves",
-        html_content: null,
-        css_content: null,
-        js_content: null,
-        thumbnail_url: null,
-        thumbnail_aspect_ratio: 0.8, // Slightly tall
-        tags: ["gradient", "animation", "background"],
-        chat_messages: null,
-        is_published: true,
-        view_count: 4567,
-        like_count: 2345,
-        collect_count: 234,
-        comment_count: 345,
-        share_count: 89,
-        created_at: "2024-03-01",
-        updated_at: "2024-03-01",
-        creator: {
-            id: "4",
-            username: "designpro",
-            display_name: "Design Pro",
-            avatar_url: null,
-            bio: null,
-            links: [],
-            created_at: "",
-            updated_at: "",
-        },
-    },
-    {
-        id: "5",
-        user_id: "5",
-        title: "Loading Spinner",
-        description: "Smooth CSS loading animation",
-        html_content: null,
-        css_content: null,
-        js_content: null,
-        thumbnail_url: null,
-        thumbnail_aspect_ratio: 1.0, // Square
-        tags: ["loading", "spinner", "css"],
-        chat_messages: null,
-        is_published: true,
-        view_count: 5678,
-        like_count: 3456,
-        collect_count: 345,
-        comment_count: 456,
-        share_count: 123,
-        created_at: "2024-03-15",
-        updated_at: "2024-03-15",
-        creator: {
-            id: "5",
-            username: "webwizard",
-            display_name: "Web Wizard",
-            avatar_url: null,
-            bio: null,
-            links: [],
-            created_at: "",
-            updated_at: "",
-        },
-    },
-    {
-        id: "6",
-        user_id: "6",
-        title: "3D Card Hover Effect",
-        description: "Cool 3D transform on hover",
-        html_content: null,
-        css_content: null,
-        js_content: null,
-        thumbnail_url: null,
-        thumbnail_aspect_ratio: 0.56, // Very tall (16:9 portrait)
-        tags: ["3d", "hover", "transform"],
-        chat_messages: null,
-        is_published: true,
-        view_count: 6789,
-        like_count: 4567,
-        collect_count: 456,
-        comment_count: 567,
-        share_count: 234,
-        created_at: "2024-04-01",
-        updated_at: "2024-04-01",
-        creator: {
-            id: "6",
-            username: "cssmaster",
-            display_name: "CSS Master",
-            avatar_url: null,
-            bio: null,
-            links: [],
-            created_at: "",
-            updated_at: "",
-        },
-    },
-    {
-        id: "7",
-        user_id: "7",
-        title: "Animated Text",
-        description: "Typography animation effects",
-        html_content: null,
-        css_content: null,
-        js_content: null,
-        thumbnail_url: null,
-        thumbnail_aspect_ratio: 1.2, // Slightly wide
-        tags: ["text", "animation", "typography"],
-        chat_messages: null,
-        is_published: true,
-        view_count: 7890,
-        like_count: 5678,
-        collect_count: 567,
-        comment_count: 678,
-        share_count: 345,
-        created_at: "2024-04-15",
-        updated_at: "2024-04-15",
-        creator: {
-            id: "7",
-            username: "typefan",
-            display_name: "Type Fan",
-            avatar_url: null,
-            bio: null,
-            links: [],
-            created_at: "",
-            updated_at: "",
-        },
-    },
-    {
-        id: "8",
-        user_id: "8",
-        title: "Dark Mode Toggle",
-        description: "Smooth theme switcher",
-        html_content: null,
-        css_content: null,
-        js_content: null,
-        thumbnail_url: null,
-        thumbnail_aspect_ratio: 0.75, // Tall
-        tags: ["darkmode", "toggle", "theme"],
-        chat_messages: null,
-        is_published: true,
-        view_count: 8901,
-        like_count: 6789,
-        collect_count: 678,
-        comment_count: 789,
-        share_count: 456,
-        created_at: "2024-05-01",
-        updated_at: "2024-05-01",
-        creator: {
-            id: "8",
-            username: "themeguru",
-            display_name: "Theme Guru",
-            avatar_url: null,
-            bio: null,
-            links: [],
-            created_at: "",
-            updated_at: "",
-        },
-    },
-];
-
 export function FeedSection() {
-    return <ResponsiveMasonryGrid projects={mockProjects} />;
+    const [projects, setProjects] = React.useState<Project[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        async function fetchProjects() {
+            try {
+                const supabase = createClient();
+
+                const { data, error } = await supabase
+                    .from("projects")
+                    .select(`
+            *,
+            creator:profiles!projects_user_id_fkey (
+              id,
+              username,
+              display_name,
+              avatar_url
+            )
+          `)
+                    .eq("is_published", true)
+                    .order("created_at", { ascending: false })
+                    .limit(50);
+
+                if (error) {
+                    console.error("Error fetching projects:", error);
+                    setError(error.message);
+                    return;
+                }
+
+                setProjects(data || []);
+            } catch (err) {
+                console.error("Error:", err);
+                setError("Failed to load projects");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchProjects();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <Spinner size="lg" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="text-center py-20 text-default-500">
+                <p>{error}</p>
+            </div>
+        );
+    }
+
+    if (projects.length === 0) {
+        return (
+            <div className="text-center py-20 text-default-500">
+                <p>No projects yet. Be the first to create one!</p>
+            </div>
+        );
+    }
+
+    return <ResponsiveMasonryGrid projects={projects} />;
 }
