@@ -6,9 +6,9 @@ import { Icon } from "@iconify/react";
 import { useEffect, useState } from "react";
 
 const themeOptions = [
-    { key: "system", label: "跟随系统", icon: "solar:monitor-bold" },
-    { key: "light", label: "浅色", icon: "solar:sun-bold" },
-    { key: "dark", label: "深色", icon: "solar:moon-bold" },
+    { key: "system", label: "System", icon: "solar:monitor-bold" },
+    { key: "light", label: "Light", icon: "solar:sun-bold" },
+    { key: "dark", label: "Dark", icon: "solar:moon-bold" },
 ];
 
 export function ThemeToggle() {
@@ -31,12 +31,12 @@ export function ThemeToggle() {
     return (
         <Dropdown>
             <DropdownTrigger>
-                <Button isIconOnly variant="light" aria-label="切换主题">
+                <Button isIconOnly variant="light" aria-label="Toggle theme">
                     <Icon icon={currentIcon()} className="text-default-500 text-xl" />
                 </Button>
             </DropdownTrigger>
             <DropdownMenu
-                aria-label="主题选择"
+                aria-label="Theme selection"
                 selectionMode="single"
                 selectedKeys={new Set([theme || "system"])}
                 onSelectionChange={(keys) => {
