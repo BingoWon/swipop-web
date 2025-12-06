@@ -297,7 +297,9 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
 					return item.items &&
 						item.items?.length > 0 &&
 						item?.type === SidebarItemType.Nest ? (
-						renderNestItem(item)
+						<React.Fragment key={item.key}>
+							{renderNestItem(item)}
+						</React.Fragment>
 					) : item.items && item.items?.length > 0 ? (
 						<ListboxSection
 							key={item.key}
@@ -312,7 +314,9 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
 							))}
 						</ListboxSection>
 					) : (
-						renderItem(item)
+						<React.Fragment key={item.key}>
+							{renderItem(item)}
+						</React.Fragment>
 					);
 				}}
 			</Listbox>
