@@ -6,6 +6,10 @@ import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/contexts/AuthContext";
+import { InteractionService } from "@/lib/services/interaction";
+import { CommentService } from "@/lib/services/comment";
+import { UserService } from "@/lib/services/user";
 import type { Project, Profile, Comment } from "@/lib/types";
 
 export default function ProjectPage({
@@ -13,20 +17,21 @@ export default function ProjectPage({
 }: {
     params: Promise<{ id: string }>;
 }) {
-    const [project, setProject] = React.useState<
-        Project & { creator?: Profile }
-        | null>(null);
+    const { user } = useAuth();
+    const [project, setProject] = React.useState<Project & { creator?: Profile } | null>(null);
     const [comments, setComments] = React.useState<(Comment & { profile?: Profile })[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [isLiked, setIsLiked] = React.useState(false);
     const [isCollected, setIsCollected] = React.useState(false);
+    const [isFollowing, setIsFollowing] = React.useState(false);
+    const [newComment, setNewComment] = React.useState("");
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
     React.useEffect(() => {
         async function loadProject() {
             const { id } = await params;
             const supabase = createClient();
 
-            // Fetch project with creator
             const { data: projectData, error } = await supabase
                 .from("projects")
                 .select(`
@@ -50,26 +55,71 @@ export default function ProjectPage({
             setProject(projectData);
 
             // Fetch comments
-            const { data: commentsData } = await supabase
-                .from("comments")
-                .select(`
-          *,
-          profile:profiles!comments_user_id_fkey (
-            id,
-            username,
-            display_name,
-            avatar_url
-          )
-        `)
-                .eq("project_id", id)
-                .order("created_at", { ascending: false });
+            const commentsData = await CommentService.fetchComments(id);
+            setComments(commentsData);
 
-            setComments(commentsData || []);
+            // Check user interactions
+            if (user) {
+                const [liked, collected] = await Promise.all([
+                    InteractionService.isLiked(id, user.id),
+                    InteractionService.isCollected(id, user.id),
+                ]);
+                setIsLiked(liked);
+                setIsCollected(collected);
+
+                if (projectData.creator) {
+                    const following = await UserService.isFollowing(user.id, projectData.creator.id);
+                    setIsFollowing(following);
+                }
+            }
+
             setLoading(false);
         }
 
         loadProject();
-    }, [params]);
+    }, [params, user]);
+
+    const handleLike = async () => {
+        if (!user || !project) return;
+        const newIsLiked = await InteractionService.toggleLike(project.id, user.id);
+        setIsLiked(newIsLiked);
+        setProject({
+            ...project,
+            like_count: newIsLiked ? project.like_count + 1 : project.like_count - 1,
+        });
+    };
+
+    const handleCollect = async () => {
+        if (!user || !project) return;
+        const newIsCollected = await InteractionService.toggleCollect(project.id, user.id);
+        setIsCollected(newIsCollected);
+        setProject({
+            ...project,
+            collect_count: newIsCollected ? project.collect_count + 1 : project.collect_count - 1,
+        });
+    };
+
+    const handleFollow = async () => {
+        if (!user || !project?.creator) return;
+        const newIsFollowing = await UserService.toggleFollow(user.id, project.creator.id);
+        setIsFollowing(newIsFollowing);
+    };
+
+    const handleSubmitComment = async () => {
+        if (!user || !project || !newComment.trim()) return;
+
+        setIsSubmitting(true);
+        const comment = await CommentService.createComment(project.id, user.id, newComment);
+        if (comment) {
+            setComments([comment, ...comments]);
+            setNewComment("");
+            setProject({
+                ...project,
+                comment_count: project.comment_count + 1,
+            });
+        }
+        setIsSubmitting(false);
+    };
 
     if (loading) {
         return (
@@ -91,7 +141,6 @@ export default function ProjectPage({
         );
     }
 
-    // Build preview HTML
     const previewSrcDoc = `
     <!DOCTYPE html>
     <html>
@@ -124,7 +173,7 @@ export default function ProjectPage({
                     </div>
 
                     {/* Sidebar */}
-                    <div className="w-full lg:w-96 border-l border-default-200 bg-background">
+                    <div className="w-full lg:w-96 border-l border-default-200 bg-background overflow-auto">
                         <div className="p-4">
                             {/* Creator Info */}
                             <div className="flex items-center gap-3 mb-4">
@@ -147,9 +196,16 @@ export default function ProjectPage({
                                         @{project.creator?.username}
                                     </p>
                                 </div>
-                                <Button color="primary" size="sm">
-                                    Follow
-                                </Button>
+                                {user && project.creator && user.id !== project.creator.id && (
+                                    <Button
+                                        color={isFollowing ? "default" : "primary"}
+                                        variant={isFollowing ? "bordered" : "solid"}
+                                        size="sm"
+                                        onPress={handleFollow}
+                                    >
+                                        {isFollowing ? "Following" : "Follow"}
+                                    </Button>
+                                )}
                             </div>
 
                             {/* Title & Description */}
@@ -181,7 +237,8 @@ export default function ProjectPage({
                                     startContent={
                                         <Icon icon={isLiked ? "solar:heart-bold" : "solar:heart-linear"} />
                                     }
-                                    onPress={() => setIsLiked(!isLiked)}
+                                    onPress={handleLike}
+                                    isDisabled={!user}
                                 >
                                     {project.like_count || 0}
                                 </Button>
@@ -193,7 +250,8 @@ export default function ProjectPage({
                                             icon={isCollected ? "solar:bookmark-bold" : "solar:bookmark-linear"}
                                         />
                                     }
-                                    onPress={() => setIsCollected(!isCollected)}
+                                    onPress={handleCollect}
+                                    isDisabled={!user}
                                 >
                                     Save
                                 </Button>
@@ -207,6 +265,29 @@ export default function ProjectPage({
                                 <span>{project.view_count || 0} views</span>
                                 <span>{project.comment_count || 0} comments</span>
                             </div>
+
+                            {/* Comment Input */}
+                            {user && (
+                                <div className="mb-6">
+                                    <Textarea
+                                        placeholder="Add a comment..."
+                                        value={newComment}
+                                        onValueChange={setNewComment}
+                                        minRows={2}
+                                    />
+                                    <div className="flex justify-end mt-2">
+                                        <Button
+                                            color="primary"
+                                            size="sm"
+                                            onPress={handleSubmitComment}
+                                            isLoading={isSubmitting}
+                                            isDisabled={!newComment.trim()}
+                                        >
+                                            Post
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Comments */}
                             <div>
@@ -223,10 +304,12 @@ export default function ProjectPage({
                                                 />
                                                 <div className="flex-1">
                                                     <p className="text-small">
-                                                        <span className="font-medium">
-                                                            {comment.profile?.display_name ||
-                                                                comment.profile?.username}
-                                                        </span>
+                                                        <Link
+                                                            href={`/profile/${comment.profile?.username}`}
+                                                            className="font-medium hover:underline"
+                                                        >
+                                                            {comment.profile?.display_name || comment.profile?.username}
+                                                        </Link>
                                                     </p>
                                                     <p className="text-small text-default-500">
                                                         {comment.content}

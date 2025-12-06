@@ -16,6 +16,8 @@ import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/contexts/AuthContext";
+import { ActivityService } from "@/lib/services/activity";
 import type { Activity, Profile, Project } from "@/lib/types";
 
 const activityConfig = {
@@ -56,6 +58,7 @@ function formatTimeAgo(dateString: string): string {
 }
 
 export default function InboxPage() {
+    const { user } = useAuth();
     const [activities, setActivities] = React.useState<
         (Activity & { actor?: Profile; project?: Project })[]
     >([]);
@@ -63,19 +66,12 @@ export default function InboxPage() {
 
     React.useEffect(() => {
         async function fetchActivities() {
-            const supabase = createClient();
-
-            // Get current user
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
-
             if (!user) {
                 setLoading(false);
                 return;
             }
 
-            // Fetch activities for current user
+            const supabase = createClient();
             const { data, error } = await supabase
                 .from("activities")
                 .select(`
@@ -105,9 +101,40 @@ export default function InboxPage() {
         }
 
         fetchActivities();
-    }, []);
+    }, [user]);
+
+    const handleMarkAllAsRead = async () => {
+        if (!user) return;
+        await ActivityService.markAllAsRead(user.id);
+        setActivities(activities.map((a) => ({ ...a, is_read: true })));
+    };
+
+    const handleMarkAsRead = async (activityId: string) => {
+        await ActivityService.markAsRead(activityId);
+        setActivities(
+            activities.map((a) =>
+                a.id === activityId ? { ...a, is_read: true } : a
+            )
+        );
+    };
 
     const unreadCount = activities.filter((a) => !a.is_read).length;
+
+    if (!user) {
+        return (
+            <SidebarLayout>
+                <div className="flex items-center justify-center min-h-screen">
+                    <div className="text-center">
+                        <Icon icon="solar:inbox-bold" className="text-5xl text-default-300 mx-auto mb-3" />
+                        <p className="text-default-400 mb-4">Sign in to view notifications</p>
+                        <Button as={Link} href="/login" color="primary">
+                            Sign In
+                        </Button>
+                    </div>
+                </div>
+            </SidebarLayout>
+        );
+    }
 
     return (
         <SidebarLayout>
@@ -123,9 +150,11 @@ export default function InboxPage() {
                                 </Chip>
                             )}
                         </div>
-                        <Button variant="light" size="sm">
-                            Mark all as read
-                        </Button>
+                        {unreadCount > 0 && (
+                            <Button variant="light" size="sm" onPress={handleMarkAllAsRead}>
+                                Mark all as read
+                            </Button>
+                        )}
                     </div>
 
                     {/* Tabs */}
@@ -179,14 +208,14 @@ export default function InboxPage() {
                                     <div className="divide-y divide-default-100">
                                         {activities.map((activity) => {
                                             const config =
-                                                activityConfig[
-                                                activity.type as keyof typeof activityConfig
-                                                ] || activityConfig.like;
+                                                activityConfig[activity.type as keyof typeof activityConfig] ||
+                                                activityConfig.like;
                                             return (
                                                 <div
                                                     key={activity.id}
-                                                    className={`flex items-start gap-3 p-4 hover:bg-default-50 transition-colors ${!activity.is_read ? "bg-primary-50/30" : ""
+                                                    className={`flex items-start gap-3 p-4 hover:bg-default-50 transition-colors cursor-pointer ${!activity.is_read ? "bg-primary-50/30" : ""
                                                         }`}
+                                                    onClick={() => !activity.is_read && handleMarkAsRead(activity.id)}
                                                 >
                                                     {!activity.is_read && (
                                                         <div className="w-2 h-2 rounded-full bg-primary mt-3 flex-shrink-0" />
@@ -216,13 +245,9 @@ export default function InboxPage() {
                                                                 href={`/profile/${activity.actor?.username}`}
                                                                 className="font-medium hover:underline"
                                                             >
-                                                                {activity.actor?.display_name ||
-                                                                    activity.actor?.username}
+                                                                {activity.actor?.display_name || activity.actor?.username}
                                                             </Link>
-                                                            <span className="text-default-500">
-                                                                {" "}
-                                                                {config.text}
-                                                            </span>
+                                                            <span className="text-default-500"> {config.text}</span>
                                                             {activity.project && (
                                                                 <Link
                                                                     href={`/project/${activity.project.id}`}
@@ -237,12 +262,6 @@ export default function InboxPage() {
                                                             {formatTimeAgo(activity.created_at)}
                                                         </p>
                                                     </div>
-
-                                                    {activity.type === "follow" && (
-                                                        <Button size="sm" color="primary" variant="flat">
-                                                            Follow
-                                                        </Button>
-                                                    )}
                                                 </div>
                                             );
                                         })}

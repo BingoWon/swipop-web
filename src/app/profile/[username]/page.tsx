@@ -13,9 +13,12 @@ import {
     Spinner,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import Link from "next/link";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { ProjectCard } from "@/components/project/ProjectCard";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/contexts/AuthContext";
+import { UserService } from "@/lib/services/user";
 import type { Profile, Project } from "@/lib/types";
 
 export default function ProfilePage({
@@ -23,24 +26,24 @@ export default function ProfilePage({
 }: {
     params: Promise<{ username: string }>;
 }) {
+    const { user } = useAuth();
     const [profile, setProfile] = React.useState<Profile | null>(null);
     const [projects, setProjects] = React.useState<Project[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [isFollowing, setIsFollowing] = React.useState(false);
-    const [username, setUsername] = React.useState<string>("");
+    const [followerCount, setFollowerCount] = React.useState(0);
+    const [followingCount, setFollowingCount] = React.useState(0);
 
     React.useEffect(() => {
         async function loadData() {
-            const { username: u } = await params;
-            setUsername(u);
-
+            const { username } = await params;
             const supabase = createClient();
 
             // Fetch profile
             const { data: profileData, error: profileError } = await supabase
                 .from("profiles")
                 .select("*")
-                .eq("username", u)
+                .eq("username", username)
                 .single();
 
             if (profileError) {
@@ -54,17 +57,47 @@ export default function ProfilePage({
             // Fetch user's projects
             const { data: projectsData } = await supabase
                 .from("projects")
-                .select("*")
+                .select(`
+          *,
+          creator:profiles!projects_user_id_fkey (
+            id,
+            username,
+            display_name,
+            avatar_url
+          )
+        `)
                 .eq("user_id", profileData.id)
                 .eq("is_published", true)
                 .order("created_at", { ascending: false });
 
             setProjects(projectsData || []);
+
+            // Fetch counts
+            const [followers, following] = await Promise.all([
+                UserService.fetchFollowerCount(profileData.id),
+                UserService.fetchFollowingCount(profileData.id),
+            ]);
+            setFollowerCount(followers);
+            setFollowingCount(following);
+
+            // Check if current user follows this profile
+            if (user && user.id !== profileData.id) {
+                const isFollowingProfile = await UserService.isFollowing(user.id, profileData.id);
+                setIsFollowing(isFollowingProfile);
+            }
+
             setLoading(false);
         }
 
         loadData();
-    }, [params]);
+    }, [params, user]);
+
+    const handleFollow = async () => {
+        if (!user || !profile) return;
+        const newIsFollowing = await UserService.toggleFollow(user.id, profile.id);
+        setIsFollowing(newIsFollowing);
+        setFollowerCount(newIsFollowing ? followerCount + 1 : followerCount - 1);
+    };
 
     if (loading) {
         return (
@@ -86,6 +119,8 @@ export default function ProfilePage({
         );
     }
 
+    const isOwnProfile = user?.id === profile.id;
+
     return (
         <SidebarLayout>
             <div className="min-h-screen px-4 py-4">
@@ -98,15 +133,19 @@ export default function ProfilePage({
                                 name={profile.display_name || profile.username || "U"}
                                 src={profile.avatar_url || undefined}
                             />
-                            <Button
-                                className="absolute top-3 right-3 bg-white/20 text-white dark:bg-black/20"
-                                radius="full"
-                                size="sm"
-                                variant="light"
-                                startContent={<Icon icon="solar:pen-bold" />}
-                            >
-                                Edit Profile
-                            </Button>
+                            {isOwnProfile && (
+                                <Button
+                                    className="absolute top-3 right-3 bg-white/20 text-white dark:bg-black/20"
+                                    radius="full"
+                                    size="sm"
+                                    variant="light"
+                                    startContent={<Icon icon="solar:pen-bold" />}
+                                    as={Link}
+                                    href="/settings"
+                                >
+                                    Edit Profile
+                                </Button>
+                            )}
                         </CardHeader>
 
                         <CardBody>
@@ -120,20 +159,22 @@ export default function ProfilePage({
                                             @{profile.username}
                                         </p>
                                     </div>
-                                    <Button
-                                        color={isFollowing ? "default" : "primary"}
-                                        variant={isFollowing ? "bordered" : "solid"}
-                                        onPress={() => setIsFollowing(!isFollowing)}
-                                        startContent={
-                                            isFollowing ? (
-                                                <Icon icon="solar:check-circle-bold" />
-                                            ) : (
-                                                <Icon icon="solar:user-plus-bold" />
-                                            )
-                                        }
-                                    >
-                                        {isFollowing ? "Following" : "Follow"}
-                                    </Button>
+                                    {!isOwnProfile && user && (
+                                        <Button
+                                            color={isFollowing ? "default" : "primary"}
+                                            variant={isFollowing ? "bordered" : "solid"}
+                                            onPress={handleFollow}
+                                            startContent={
+                                                isFollowing ? (
+                                                    <Icon icon="solar:check-circle-bold" />
+                                                ) : (
+                                                    <Icon icon="solar:user-plus-bold" />
+                                                )
+                                            }
+                                        >
+                                            {isFollowing ? "Following" : "Follow"}
+                                        </Button>
+                                    )}
                                 </div>
 
                                 {profile.bio && (
@@ -164,6 +205,20 @@ export default function ProfilePage({
                                         </span>
                                         &nbsp;
                                         <span className="text-small text-default-400">Projects</span>
+                                    </p>
+                                    <p>
+                                        <span className="text-small text-default-500 font-medium">
+                                            {followingCount}
+                                        </span>
+                                        &nbsp;
+                                        <span className="text-small text-default-400">Following</span>
+                                    </p>
+                                    <p>
+                                        <span className="text-small text-default-500 font-medium">
+                                            {followerCount}
+                                        </span>
+                                        &nbsp;
+                                        <span className="text-small text-default-400">Followers</span>
                                     </p>
                                 </div>
                             </div>
