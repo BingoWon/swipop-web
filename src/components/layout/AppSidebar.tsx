@@ -29,7 +29,13 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
 
     const getSelectedKey = () => {
         if (pathname === "/") return "home";
-        if (pathname.startsWith("/create")) return "create";
+        // Match Create sub-pages to their specific keys
+        if (pathname === "/create/chat") return "create-chat";
+        if (pathname === "/create/preview") return "create-preview";
+        if (pathname === "/create/html") return "create-html";
+        if (pathname === "/create/css") return "create-css";
+        if (pathname === "/create/js") return "create-js";
+        if (pathname.startsWith("/create")) return "create-chat"; // default
         if (pathname.startsWith("/inbox")) return "inbox";
         if (pathname.startsWith("/profile")) return "profile";
         if (pathname.startsWith("/search")) return "search";

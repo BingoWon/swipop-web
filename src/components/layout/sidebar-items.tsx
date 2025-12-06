@@ -2,7 +2,7 @@ import { type SidebarItem, SidebarItemType } from "./Sidebar";
 
 /**
  * Sidebar items for Swipop navigation
- * Matches iOS app tabs: Home, Create (with sub-tabs), Inbox, Profile
+ * 5 top-level pages with Create sub-pages as nested items
  */
 export const sidebarItems: SidebarItem[] = [
     {
@@ -19,31 +19,31 @@ export const sidebarItems: SidebarItem[] = [
         items: [
             {
                 key: "create-chat",
-                href: "/create?tab=chat",
+                href: "/create/chat",
                 icon: "solar:chat-round-dots-bold",
                 title: "Chat",
             },
             {
                 key: "create-preview",
-                href: "/create?tab=preview",
+                href: "/create/preview",
                 icon: "solar:play-bold",
                 title: "Preview",
             },
             {
                 key: "create-html",
-                href: "/create?tab=html",
+                href: "/create/html",
                 icon: "solar:code-bold",
                 title: "HTML",
             },
             {
                 key: "create-css",
-                href: "/create?tab=css",
+                href: "/create/css",
                 icon: "solar:palette-bold",
                 title: "CSS",
             },
             {
                 key: "create-js",
-                href: "/create?tab=js",
+                href: "/create/js",
                 icon: "solar:bolt-bold",
                 title: "JavaScript",
             },
@@ -54,14 +54,12 @@ export const sidebarItems: SidebarItem[] = [
         href: "/inbox",
         icon: "solar:bell-bold",
         title: "Inbox",
-        // Badge handled dynamically in AppSidebar
     },
     {
         key: "profile",
         href: "/profile",
         icon: "solar:user-bold",
         title: "Profile",
-        // Redirects to user's own profile via route handler
     },
 ];
 
