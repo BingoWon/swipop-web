@@ -38,7 +38,7 @@ export default function LoginPage() {
         }
     };
 
-    const handleOAuth = async (provider: "google" | "github") => {
+    const handleOAuth = async (provider: "google" | "github" | "apple") => {
         setIsLoading(true);
         const { error } = await supabase.auth.signInWithOAuth({
             provider,
@@ -132,6 +132,15 @@ export default function LoginPage() {
                 </div>
 
                 <div className="flex flex-col gap-2">
+                    <Button
+                        startContent={<Icon icon="ic:baseline-apple" width={24} />}
+                        variant="bordered"
+                        className="bg-black text-white dark:bg-white dark:text-black"
+                        onPress={() => handleOAuth("apple")}
+                        isDisabled={isLoading}
+                    >
+                        Continue with Apple
+                    </Button>
                     <Button
                         startContent={<Icon icon="flat-color-icons:google" width={24} />}
                         variant="bordered"
