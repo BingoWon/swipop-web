@@ -13,8 +13,9 @@ interface MasonryGridProps {
 /**
  * True masonry/waterfall grid layout for variable height project cards.
  * Uses CSS columns for proper masonry effect.
+ * Default: 5 columns for desktop.
  */
-export function MasonryGrid({ projects, columns = 2, gap = 12 }: MasonryGridProps) {
+export function MasonryGrid({ projects, columns = 5, gap = 12 }: MasonryGridProps) {
     return (
         <div
             className="w-full"
@@ -40,14 +41,14 @@ export function MasonryGrid({ projects, columns = 2, gap = 12 }: MasonryGridProp
 
 /**
  * Responsive masonry grid that adjusts columns based on screen size.
- * Uses CSS media queries for responsive column count.
+ * Default 5 columns on desktop, fewer on smaller screens.
  */
 export function ResponsiveMasonryGrid({ projects, gap = 12 }: Omit<MasonryGridProps, "columns">) {
     return (
         <>
             {/* Mobile: 2 columns */}
             <div
-                className="block md:hidden w-full"
+                className="block sm:hidden w-full"
                 style={{
                     columnCount: 2,
                     columnGap: `${gap}px`,
@@ -66,9 +67,9 @@ export function ResponsiveMasonryGrid({ projects, gap = 12 }: Omit<MasonryGridPr
                 ))}
             </div>
 
-            {/* Tablet: 3 columns */}
+            {/* Small tablet: 3 columns */}
             <div
-                className="hidden md:block lg:hidden w-full"
+                className="hidden sm:block md:hidden w-full"
                 style={{
                     columnCount: 3,
                     columnGap: `${gap}px`,
@@ -87,11 +88,32 @@ export function ResponsiveMasonryGrid({ projects, gap = 12 }: Omit<MasonryGridPr
                 ))}
             </div>
 
-            {/* Desktop: 4 columns */}
+            {/* Tablet: 4 columns */}
+            <div
+                className="hidden md:block lg:hidden w-full"
+                style={{
+                    columnCount: 4,
+                    columnGap: `${gap}px`,
+                }}
+            >
+                {projects.map((project) => (
+                    <div
+                        key={project.id}
+                        className="break-inside-avoid"
+                        style={{
+                            marginBottom: `${gap}px`,
+                        }}
+                    >
+                        <ProjectCard project={project} />
+                    </div>
+                ))}
+            </div>
+
+            {/* Desktop: 5 columns (default) */}
             <div
                 className="hidden lg:block w-full"
                 style={{
-                    columnCount: 4,
+                    columnCount: 5,
                     columnGap: `${gap}px`,
                 }}
             >

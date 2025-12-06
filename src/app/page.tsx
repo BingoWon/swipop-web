@@ -11,25 +11,25 @@ export default function Home() {
     <SidebarLayout>
       <div className="min-h-screen">
         {/* Mobile Header - shown only on mobile */}
-        <header className="md:hidden flex items-center justify-between p-4 border-b border-default-200">
+        <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-default-200">
           <Link href="/" className="flex items-center gap-2">
             <div className="bg-primary text-primary-foreground rounded-lg p-1.5">
               <Icon icon="solar:code-bold" className="text-lg" />
             </div>
             <span className="font-bold">Swipop</span>
           </Link>
-          <div className="flex gap-2">
-            <Button as={Link} href="/search" isIconOnly variant="light">
+          <div className="flex gap-1">
+            <Button as={Link} href="/search" isIconOnly variant="light" size="sm">
               <Icon icon="solar:magnifer-linear" />
             </Button>
-            <Button as={Link} href="/inbox" isIconOnly variant="light">
+            <Button as={Link} href="/inbox" isIconOnly variant="light" size="sm">
               <Icon icon="solar:bell-linear" />
             </Button>
           </div>
         </header>
 
-        {/* Main Content - Full width masonry feed */}
-        <div className="p-4">
+        {/* Feed - directly showing projects like iOS app */}
+        <div className="px-4 py-4">
           <FeedSection />
         </div>
       </div>
