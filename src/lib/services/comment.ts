@@ -3,7 +3,8 @@ import type { Comment } from "@/lib/types";
 
 const supabase = () => createClient();
 
-const COMMENT_SELECT = `*, profile:profiles!comments_user_id_fkey (id, username, display_name, avatar_url)`;
+// Use 'users' table to match iOS app schema
+const COMMENT_SELECT = `*, profile:users (id, username, display_name, avatar_url)`;
 
 /**
  * Service for comments

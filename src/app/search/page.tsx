@@ -26,7 +26,7 @@ export default function SearchPage() {
             .from("projects")
             .select(`
         *,
-        creator:profiles!projects_user_id_fkey (
+        creator:users (
           id,
           username,
           display_name,

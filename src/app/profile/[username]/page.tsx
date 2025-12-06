@@ -41,7 +41,7 @@ export default function ProfilePage({
 
             // Fetch profile
             const { data: profileData, error: profileError } = await supabase
-                .from("profiles")
+                .from("users")
                 .select("*")
                 .eq("username", username)
                 .single();
@@ -59,7 +59,7 @@ export default function ProfilePage({
                 .from("projects")
                 .select(`
           *,
-          creator:profiles!projects_user_id_fkey (
+          creator:users (
             id,
             username,
             display_name,

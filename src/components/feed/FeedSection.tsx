@@ -16,17 +16,10 @@ export function FeedSection() {
             try {
                 const supabase = createClient();
 
+                // Use users(*) to match iOS app's selectWithCreator
                 const { data, error } = await supabase
                     .from("projects")
-                    .select(`
-            *,
-            creator:profiles!projects_user_id_fkey (
-              id,
-              username,
-              display_name,
-              avatar_url
-            )
-          `)
+                    .select(`*, creator:users(*)`)
                     .eq("is_published", true)
                     .order("created_at", { ascending: false })
                     .limit(50);

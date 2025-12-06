@@ -76,7 +76,7 @@ export default function InboxPage() {
                 .from("activities")
                 .select(`
           *,
-          actor:profiles!activities_actor_id_fkey (
+          actor:users!activities_actor_id_fkey (
             id,
             username,
             display_name,

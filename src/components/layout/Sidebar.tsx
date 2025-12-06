@@ -173,6 +173,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
                                 >
                                     {item.items && item.items?.length > 0 ? (
                                         <Listbox
+                                            key={`${item.key}-nested`}
                                             className={"mt-0.5"}
                                             classNames={{
                                                 list: cn("border-l border-default-200 pl-4"),

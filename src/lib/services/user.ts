@@ -58,7 +58,7 @@ export const UserService = {
         updates: Partial<Pick<Profile, "username" | "display_name" | "bio" | "links">>
     ): Promise<Profile | null> {
         const { data, error } = await supabase()
-            .from("profiles")
+            .from("users")
             .update(updates)
             .eq("id", userId)
             .select()
