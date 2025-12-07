@@ -3,6 +3,7 @@
 import { Spinner } from "@heroui/react";
 import React from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useInteractionStore } from "@/lib/stores/interaction";
 import type { Project } from "@/lib/types";
 import { ResponsiveMasonryGrid } from "./MasonryGrid";
 
@@ -10,13 +11,13 @@ export function FeedSection() {
 	const [projects, setProjects] = React.useState<Project[]>([]);
 	const [loading, setLoading] = React.useState(true);
 	const [error, setError] = React.useState<string | null>(null);
+	const updateFromProjects = useInteractionStore((s) => s.updateFromProjects);
 
 	React.useEffect(() => {
 		async function fetchProjects() {
 			try {
 				const supabase = createClient();
 
-				// Use users(*) to match iOS app's selectWithCreator
 				const { data, error } = await supabase
 					.from("projects")
 					.select(`*, creator:users(*)`)
@@ -30,7 +31,11 @@ export function FeedSection() {
 					return;
 				}
 
-				setProjects(data || []);
+				const fetchedProjects = data || [];
+				setProjects(fetchedProjects);
+
+				// Hydrate InteractionStore with server data
+				updateFromProjects(fetchedProjects);
 			} catch (err) {
 				console.error("Error:", err);
 				setError("Failed to load projects");
@@ -40,7 +45,7 @@ export function FeedSection() {
 		}
 
 		fetchProjects();
-	}, []);
+	}, [updateFromProjects]);
 
 	if (loading) {
 		return (

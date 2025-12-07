@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 import { CommentService } from "@/lib/services/comment";
 import { InteractionService } from "@/lib/services/interaction";
 import { UserService } from "@/lib/services/user";
+import { useInteractionStore } from "@/lib/stores/interaction";
 import { createClient } from "@/lib/supabase/client";
 import type { Comment, Profile, Project } from "@/lib/types";
 
@@ -36,12 +37,17 @@ export default function ProjectPage({
 		(Comment & { profile?: Profile })[]
 	>([]);
 	const [loading, setLoading] = React.useState(true);
-	const [isLiked, setIsLiked] = React.useState(false);
 	const [isCollected, setIsCollected] = React.useState(false);
 	const [isFollowing, setIsFollowing] = React.useState(false);
 	const [newComment, setNewComment] = React.useState("");
 	const [isSubmitting, setIsSubmitting] = React.useState(false);
 	const [selectedLang, setSelectedLang] = React.useState<CodeLanguage>("html");
+
+	// InteractionStore for like state
+	const isLiked = useInteractionStore((s) => project ? s.isLiked(project.id) : false);
+	const likeCount = useInteractionStore((s) => project ? s.likeCount(project.id) : 0);
+	const toggleLike = useInteractionStore((s) => s.toggleLike);
+	const updateFromProjects = useInteractionStore((s) => s.updateFromProjects);
 
 	React.useEffect(() => {
 		async function loadProject() {
@@ -60,15 +66,15 @@ export default function ProjectPage({
 			}
 
 			setProject(projectData);
+
+			// Hydrate InteractionStore with this project's data
+			updateFromProjects([projectData]);
+
 			const commentsData = await CommentService.fetchComments(id);
 			setComments(commentsData);
 
 			if (user) {
-				const [liked, collected] = await Promise.all([
-					InteractionService.isLiked(id, user.id),
-					InteractionService.isCollected(id, user.id),
-				]);
-				setIsLiked(liked);
+				const collected = await InteractionService.isCollected(id, user.id);
 				setIsCollected(collected);
 				if (projectData.creator) {
 					setIsFollowing(
@@ -79,16 +85,12 @@ export default function ProjectPage({
 			setLoading(false);
 		}
 		loadProject();
-	}, [params, user]);
+	}, [params, user, updateFromProjects]);
 
-	const handleLike = async () => {
-		if (!user || !project) return;
-		const newIsLiked = await InteractionService.toggleLike(project.id, user.id);
-		setIsLiked(newIsLiked);
-		setProject({
-			...project,
-			like_count: project.like_count + (newIsLiked ? 1 : -1),
-		});
+	const handleLike = () => {
+		if (user && project) {
+			toggleLike(project.id, user.id);
+		}
 	};
 
 	const handleCollect = async () => {
@@ -240,7 +242,7 @@ export default function ProjectPage({
 								<StatTile icon="solar:eye-bold" count={project.view_count} />
 								<StatTile
 									icon={isLiked ? "solar:heart-bold" : "solar:heart-linear"}
-									count={project.like_count}
+									count={likeCount}
 									color={isLiked ? "text-danger" : undefined}
 									onClick={user ? handleLike : undefined}
 								/>
