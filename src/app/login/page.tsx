@@ -4,6 +4,7 @@ import { Button, Checkbox, Divider, Form, Input, Link } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import React from "react";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -55,12 +56,15 @@ export default function LoginPage() {
 	return (
 		<div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-rose-400 via-fuchsia-500 to-indigo-500 p-2 sm:p-4 lg:p-8">
 			<div className="rounded-large bg-content1 shadow-large flex w-full max-w-sm flex-col gap-4 px-8 pt-6 pb-10">
-				{/* Logo */}
-				<div className="flex items-center gap-2 pb-2">
-					<div className="bg-primary text-primary-foreground rounded-lg p-1.5">
-						<Icon icon="solar:code-bold" className="text-xl" />
+				{/* Header with Logo and Theme Toggle */}
+				<div className="flex items-center justify-between pb-2">
+					<div className="flex items-center gap-2">
+						<div className="bg-primary text-primary-foreground rounded-lg p-1.5">
+							<Icon icon="solar:code-bold" className="text-xl" />
+						</div>
+						<span className="text-lg font-bold">Swipop</span>
 					</div>
-					<span className="text-lg font-bold">Swipop</span>
+					<ThemeToggle />
 				</div>
 
 				<p className="pb-2 text-xl font-medium">Log In</p>
