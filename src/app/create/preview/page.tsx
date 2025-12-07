@@ -1,9 +1,9 @@
 "use client";
 
-import { useCreate } from "../layout";
+import { useProjectEditor } from "../layout";
 
 export default function PreviewPage() {
-	const { htmlContent, cssContent, jsContent } = useCreate();
+	const { htmlContent, cssContent, jsContent } = useProjectEditor();
 
 	const previewSrcDoc = `<!DOCTYPE html>
 <html>

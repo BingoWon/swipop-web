@@ -1,18 +1,16 @@
 "use client";
 
-import {
-	Avatar,
-	Button,
-	cn,
-	ScrollShadow,
-	Textarea,
-	Tooltip,
-} from "@heroui/react";
+import { Button, ScrollShadow, Textarea, Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import React from "react";
-import { type Message, useCreate } from "../layout";
+import {
+	type ChatMessage,
+	MessageCard,
+	TypingIndicator,
+} from "@/components/ai/MessageCard";
+import { useProjectEditor } from "../layout";
 
-const ideas = [
+const IDEA_SUGGESTIONS = [
 	"Create a neon button with glow effect",
 	"Build an animated gradient background",
 	"Design a minimal loading spinner",
@@ -21,16 +19,24 @@ const ideas = [
 
 export default function ChatPage() {
 	const { messages, addMessage, setHtmlContent, setCssContent, setJsContent } =
-		useCreate();
+		useProjectEditor();
 	const [prompt, setPrompt] = React.useState("");
 	const [isGenerating, setIsGenerating] = React.useState(false);
 	const scrollRef = React.useRef<HTMLDivElement>(null);
 
-	const handleSubmit = async (e?: React.FormEvent) => {
+	// Auto-scroll to bottom when messages change
+	React.useEffect(() => {
+		scrollRef.current?.scrollTo({
+			top: scrollRef.current.scrollHeight,
+			behavior: "smooth",
+		});
+	}, []);
+
+	const handleSubmit = (e?: React.FormEvent) => {
 		e?.preventDefault();
 		if (!prompt.trim() || isGenerating) return;
 
-		const userMessage: Message = {
+		const userMessage: ChatMessage = {
 			id: crypto.randomUUID(),
 			role: "user",
 			content: prompt,
@@ -40,9 +46,9 @@ export default function ChatPage() {
 		setPrompt("");
 		setIsGenerating(true);
 
-		// Simulate AI response (replace with actual AI API call)
+		// TODO: Replace with actual AI API call
 		setTimeout(() => {
-			const assistantMessage: Message = {
+			const assistantMessage: ChatMessage = {
 				id: crypto.randomUUID(),
 				role: "assistant",
 				content: `I'll help you create that! Here's a ${prompt.toLowerCase()} effect:\n\nI've generated the HTML, CSS, and JavaScript code for you. Check the Preview tab to see the result, or edit the code in the HTML, CSS, and JavaScript tabs.`,
@@ -83,13 +89,6 @@ export default function ChatPage() {
 		}, 1500);
 	};
 
-	React.useEffect(() => {
-		scrollRef.current?.scrollTo({
-			top: scrollRef.current.scrollHeight,
-			behavior: "smooth",
-		});
-	}, []);
-
 	return (
 		<div className="flex flex-col h-full">
 			{/* Messages */}
@@ -112,44 +111,20 @@ export default function ChatPage() {
 				) : (
 					messages.map((msg) => <MessageCard key={msg.id} message={msg} />)
 				)}
-				{isGenerating && (
-					<div className="flex gap-3">
-						<Avatar
-							src="https://nextuipro.nyc3.cdn.digitaloceanspaces.com/components-images/avatar_ai.png"
-							size="sm"
-							className="shrink-0"
-						/>
-						<div className="rounded-medium bg-content2 px-4 py-3 animate-pulse">
-							<div className="flex gap-1">
-								<span
-									className="w-2 h-2 bg-primary rounded-full animate-bounce"
-									style={{ animationDelay: "0ms" }}
-								/>
-								<span
-									className="w-2 h-2 bg-primary rounded-full animate-bounce"
-									style={{ animationDelay: "150ms" }}
-								/>
-								<span
-									className="w-2 h-2 bg-primary rounded-full animate-bounce"
-									style={{ animationDelay: "300ms" }}
-								/>
-							</div>
-						</div>
-					</div>
-				)}
+				{isGenerating && <TypingIndicator />}
 			</ScrollShadow>
 
 			{/* Input Area */}
 			<div className="border-t border-divider p-4 space-y-3">
-				{/* Ideas - Simple single-line buttons following HeroUI pattern */}
+				{/* Idea Suggestions */}
 				<ScrollShadow
 					hideScrollBar
 					orientation="horizontal"
 					className="flex gap-2"
 				>
-					{ideas.map((idea, i) => (
+					{IDEA_SUGGESTIONS.map((idea) => (
 						<Button
-							key={i}
+							key={idea}
 							variant="flat"
 							onPress={() => setPrompt(idea)}
 							className="shrink-0"
@@ -159,7 +134,7 @@ export default function ChatPage() {
 					))}
 				</ScrollShadow>
 
-				{/* Prompt Form - Using HeroUI Textarea */}
+				{/* Prompt Form */}
 				<form
 					onSubmit={handleSubmit}
 					className="rounded-medium bg-default-100 hover:bg-default-200/70 transition-colors"
@@ -215,34 +190,6 @@ export default function ChatPage() {
 					Swipop AI can make mistakes. Review the generated code before
 					publishing.
 				</p>
-			</div>
-		</div>
-	);
-}
-
-function MessageCard({ message }: { message: Message }) {
-	const isUser = message.role === "user";
-
-	return (
-		<div className={cn("flex gap-3", isUser && "flex-row-reverse")}>
-			<Avatar
-				src={
-					isUser
-						? undefined
-						: "https://nextuipro.nyc3.cdn.digitaloceanspaces.com/components-images/avatar_ai.png"
-				}
-				showFallback
-				name={isUser ? "U" : "AI"}
-				size="sm"
-				className={cn("shrink-0", isUser && "bg-primary")}
-			/>
-			<div
-				className={cn(
-					"rounded-medium px-4 py-3 max-w-[80%]",
-					isUser ? "bg-primary text-primary-foreground ml-auto" : "bg-content2",
-				)}
-			>
-				<p className="text-small whitespace-pre-wrap">{message.content}</p>
 			</div>
 		</div>
 	);

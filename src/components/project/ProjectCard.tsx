@@ -9,13 +9,12 @@ import type { Project } from "@/lib/types";
 
 interface ProjectCardProps {
 	project: Project;
-	columnWidth?: number;
 }
 
 /**
  * Project card matching iOS ProjectGridCell design with real interactions
  */
-export function ProjectCard({ project, columnWidth }: ProjectCardProps) {
+export function ProjectCard({ project }: ProjectCardProps) {
 	const { user } = useAuth();
 	const [isLiked, setIsLiked] = React.useState(false);
 	const [likeCount, setLikeCount] = React.useState(project.like_count);
