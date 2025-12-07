@@ -172,10 +172,13 @@ export default function ProjectPage({
 				{/* Right: Tabbed Content (Info/HTML/CSS/JS) */}
 				<div className="flex-1 border border-divider rounded-large bg-content1 overflow-hidden flex flex-col min-h-[400px] lg:min-h-0">
 					<Tabs
+						fullWidth
 						selectedKey={activeTab}
 						onSelectionChange={(key: Key) => setActiveTab(key as TabKey)}
 						classNames={{
-							tabList: "px-4 pt-2",
+							base: "border-b border-divider",
+							tabList: "p-0 gap-0",
+							tab: "h-10",
 							panel: "hidden",
 						}}
 					>
