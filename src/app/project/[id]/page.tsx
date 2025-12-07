@@ -129,7 +129,7 @@ export default function ProjectPage({
 
 	if (loading) {
 		return (
-			<SidebarLayout noPadding>
+			<SidebarLayout>
 				<div className="flex items-center justify-center h-screen">
 					<Spinner size="lg" />
 				</div>
@@ -139,7 +139,7 @@ export default function ProjectPage({
 
 	if (!project) {
 		return (
-			<SidebarLayout noPadding>
+			<SidebarLayout>
 				<div className="flex items-center justify-center h-screen">
 					<p className="text-default-500">Project not found</p>
 				</div>
@@ -162,12 +162,12 @@ export default function ProjectPage({
 		"U";
 
 	return (
-		<SidebarLayout noPadding>
-			<div className="flex flex-col h-screen">
-				{/* Top Section: Preview (left) + Details/Comments (right) - 1:1 ratio */}
+		<SidebarLayout>
+			<div className="flex flex-col h-screen -m-4 md:-m-6">
+				{/* Top Section: Preview (left 50%) + Details/Comments (right 50%) */}
 				<div className="flex-1 flex flex-col lg:flex-row min-h-0">
-					{/* Left: Preview - 50% width on desktop, full height on mobile */}
-					<div className="h-[50vh] lg:h-full lg:flex-1 bg-black shrink-0">
+					{/* Left: Preview - h-screen on all devices, 50% width on desktop */}
+					<div className="h-screen lg:flex-1 bg-black shrink-0">
 						<iframe
 							srcDoc={previewSrcDoc}
 							sandbox="allow-scripts"
@@ -176,10 +176,11 @@ export default function ProjectPage({
 						/>
 					</div>
 
-					{/* Right: Details & Comments only - 50% width on desktop */}
-					<div className="h-[50vh] lg:h-full lg:flex-1 border-t lg:border-t-0 lg:border-l border-divider bg-content1 flex flex-col">
+					{/* Right: Details & Comments - h-screen on all devices, 50% width on desktop */}
+					<div className="h-screen lg:flex-1 border-t lg:border-t-0 lg:border-l border-divider bg-content1 flex flex-col">
 						<ScrollShadow className="flex-1 overflow-auto">
-							<div className="p-6 space-y-5">
+							{/* Content area with padding */}
+							<div className="p-4 md:p-6 space-y-5">
 								{/* Creator Section with Avatar */}
 								<div className="flex items-center gap-3">
 									<Link href={`/profile/${project.creator?.username}`}>
@@ -336,7 +337,7 @@ export default function ProjectPage({
 					</div>
 				</div>
 
-				{/* Bottom: Source Code Tabs - separate section */}
+				{/* Bottom: Source Code Tabs */}
 				<div className="border-t border-divider bg-content1 shrink-0">
 					<Tabs
 						selectedKey={selectedLang}
