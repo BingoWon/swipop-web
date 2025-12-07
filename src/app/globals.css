@@ -19,3 +19,30 @@ body {
 	color: var(--foreground);
 	font-family: var(--font-geist-sans, Arial, Helvetica, sans-serif);
 }
+
+/*
+ * HeroUI Button Fix
+ * Ensure buttons don't wrap icon and text to separate lines
+ * This fixes potential conflicts with Tailwind preflight
+ */
+@layer components {
+
+	/* Ensure all buttons use row flex direction */
+	button,
+	[role="button"],
+	.btn,
+	[class*="button"] {
+		flex-direction: row !important;
+		flex-wrap: nowrap !important;
+	}
+
+	/* HeroUI button internal wrapper fix */
+	[data-slot="button"]>span,
+	button>span {
+		display: inline-flex !important;
+		flex-direction: row !important;
+		align-items: center !important;
+		flex-wrap: nowrap !important;
+		white-space: nowrap !important;
+	}
+}
