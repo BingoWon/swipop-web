@@ -66,14 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 	useEffect(() => {
 		// Get initial session
-		console.log("[AuthContext] Initializing...");
-		supabase.auth.getSession().then(({ data: { session }, error }) => {
-			console.log("[AuthContext] getSession result:", {
-				hasSession: !!session,
-				userId: session?.user?.id,
-				email: session?.user?.email,
-				error: error?.message,
-			});
+		supabase.auth.getSession().then(({ data: { session } }) => {
 			setUser(session?.user ?? null);
 			if (session?.user) {
 				fetchProfile(session.user.id);
@@ -84,13 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		// Listen for auth changes
 		const {
 			data: { subscription },
-		} = supabase.auth.onAuthStateChange(async (event, session) => {
-			console.log("[AuthContext] onAuthStateChange:", {
-				event,
-				hasSession: !!session,
-				userId: session?.user?.id,
-				email: session?.user?.email,
-			});
+		} = supabase.auth.onAuthStateChange(async (_event, session) => {
 			setUser(session?.user ?? null);
 			if (session?.user) {
 				await fetchProfile(session.user.id);
