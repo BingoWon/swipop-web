@@ -28,13 +28,7 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
 
 	const getSelectedKey = () => {
 		if (pathname === "/") return "home";
-		// Match Create sub-pages to their specific keys
-		if (pathname === "/create/chat") return "create-chat";
-		if (pathname === "/create/preview") return "create-preview";
-		if (pathname === "/create/html") return "create-html";
-		if (pathname === "/create/css") return "create-css";
-		if (pathname === "/create/js") return "create-js";
-		if (pathname.startsWith("/create")) return "create-chat"; // default
+		if (pathname.startsWith("/create")) return "create";
 		if (pathname.startsWith("/inbox")) return "inbox";
 		if (pathname.startsWith("/profile")) return "profile";
 		if (pathname.startsWith("/search")) return "search";
@@ -46,13 +40,13 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
 	const itemsWithBadge = sidebarItems.map((item) =>
 		item.key === "inbox" && unreadCount > 0
 			? {
-					...item,
-					endContent: (
-						<span className="bg-primary text-primary-foreground text-tiny px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
-							{unreadCount}
-						</span>
-					),
-				}
+				...item,
+				endContent: (
+					<span className="bg-primary text-primary-foreground text-tiny px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+						{unreadCount}
+					</span>
+				),
+			}
 			: item,
 	);
 

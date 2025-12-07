@@ -2,7 +2,7 @@ import { type SidebarItem, SidebarItemType } from "./Sidebar";
 
 /**
  * Sidebar items for Swipop navigation
- * 5 top-level pages with Create sub-pages as nested items
+ * Simple flat structure - Create is now a single unified page
  */
 export const sidebarItems: SidebarItem[] = [
 	{
@@ -13,41 +13,9 @@ export const sidebarItems: SidebarItem[] = [
 	},
 	{
 		key: "create",
+		href: "/create",
 		icon: "solar:magic-stick-3-bold",
 		title: "Create",
-		type: SidebarItemType.Nest,
-		items: [
-			{
-				key: "create-chat",
-				href: "/create/chat",
-				icon: "solar:chat-round-dots-bold",
-				title: "Chat",
-			},
-			{
-				key: "create-preview",
-				href: "/create/preview",
-				icon: "solar:play-bold",
-				title: "Preview",
-			},
-			{
-				key: "create-html",
-				href: "/create/html",
-				icon: "solar:code-bold",
-				title: "HTML",
-			},
-			{
-				key: "create-css",
-				href: "/create/css",
-				icon: "solar:palette-bold",
-				title: "CSS",
-			},
-			{
-				key: "create-js",
-				href: "/create/js",
-				icon: "solar:bolt-bold",
-				title: "JavaScript",
-			},
-		],
 	},
 	{
 		key: "inbox",

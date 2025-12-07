@@ -1,12 +1,15 @@
 "use client";
 
 import { EditorState, type Extension } from "@codemirror/state";
-import { EditorView, keymap, placeholder as placeholderExt } from "@codemirror/view";
+import {
+	EditorView,
+	placeholder as placeholderExt,
+} from "@codemirror/view";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { html } from "@codemirror/lang-html";
 import { css } from "@codemirror/lang-css";
 import { javascript } from "@codemirror/lang-javascript";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 
 type Language = "html" | "css" | "javascript" | "HTML" | "CSS" | "JavaScript";
 
@@ -25,7 +28,7 @@ const languageExtensions: Record<string, () => Extension> = {
 
 /**
  * CodeMirror 6-based code editor with syntax highlighting
- * Styled to match HeroUI dark theme
+ * No header - relies on parent tabs to show language
  */
 export function CodeEditor({
 	language,
@@ -36,15 +39,11 @@ export function CodeEditor({
 	const editorRef = useRef<HTMLDivElement>(null);
 	const viewRef = useRef<EditorView | null>(null);
 
-	// Normalize language key
 	const langKey = language.toLowerCase();
-	const langLabel = language.charAt(0).toUpperCase() + language.slice(1).toLowerCase();
 
-	// Stable onChange callback
 	const onChangeRef = useRef(onChange);
 	onChangeRef.current = onChange;
 
-	// Create editor on mount
 	useEffect(() => {
 		if (!editorRef.current) return;
 
@@ -67,7 +66,8 @@ export function CodeEditor({
 					fontSize: "14px",
 				},
 				".cm-scroller": {
-					fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+					fontFamily:
+						"ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
 					padding: "16px",
 				},
 				".cm-content": {
@@ -104,7 +104,6 @@ export function CodeEditor({
 		};
 	}, [langKey, placeholder]);
 
-	// Sync external value changes
 	useEffect(() => {
 		const view = viewRef.current;
 		if (!view) return;
@@ -122,14 +121,6 @@ export function CodeEditor({
 	}, [value]);
 
 	return (
-		<div className="h-full flex flex-col">
-			<header className="px-4 py-2 border-b border-divider bg-content1 flex items-center gap-2">
-				<span className="text-small font-medium">{langLabel}</span>
-				<span className="text-tiny text-default-400">
-					{value.length} characters
-				</span>
-			</header>
-			<div ref={editorRef} className="flex-1 overflow-auto bg-[#282c34]" />
-		</div>
+		<div ref={editorRef} className="h-full overflow-auto bg-[#282c34]" />
 	);
 }
