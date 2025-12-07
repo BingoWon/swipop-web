@@ -21,28 +21,16 @@ body {
 }
 
 /*
- * HeroUI Button Fix
- * Ensure buttons don't wrap icon and text to separate lines
- * This fixes potential conflicts with Tailwind preflight
+ * Minimal fix for HeroUI Button icon/text wrapping
+ * Only target the specific wrapping issue without breaking other styles
  */
-@layer components {
 
-	/* Ensure all buttons use row flex direction */
-	button,
-	[role="button"],
-	.btn,
-	[class*="button"] {
-		flex-direction: row !important;
-		flex-wrap: nowrap !important;
-	}
+/* Prevent button content from wrapping - minimal fix */
+button {
+	flex-wrap: nowrap !important;
+}
 
-	/* HeroUI button internal wrapper fix */
-	[data-slot="button"]>span,
-	button>span {
-		display: inline-flex !important;
-		flex-direction: row !important;
-		align-items: center !important;
-		flex-wrap: nowrap !important;
-		white-space: nowrap !important;
-	}
+/* Ensure icons stay inline */
+button svg {
+	flex-shrink: 0;
 }

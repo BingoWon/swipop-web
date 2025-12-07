@@ -3,8 +3,6 @@
 import {
 	Avatar,
 	Button,
-	Card,
-	CardBody,
 	Chip,
 	ScrollShadow,
 	Spinner,
@@ -157,16 +155,15 @@ export default function ProjectPage({
 
 	const creatorAvatar = project.creator?.avatar_url;
 	const creatorInitial =
-		project.creator?.display_name?.[0] ||
-		project.creator?.username?.[0] ||
-		"U";
+		project.creator?.display_name?.[0] || project.creator?.username?.[0] || "U";
 
 	return (
 		<SidebarLayout>
-			{/* Main layout - uses full height minus SidebarLayout padding */}
-			<div className="flex flex-col lg:flex-row h-[calc(100vh-48px)] md:h-[calc(100vh-48px)] -mx-4 md:-mx-6 -mt-4 md:-mt-6">
-				{/* Left: Preview - 50% width, edge to edge (no padding) */}
-				<div className="h-screen lg:h-full lg:flex-1 bg-black">
+			{/* Top row: Preview (left) + Details (right) - fills viewport exactly */}
+			{/* Height = 100vh minus SidebarLayout padding (p-4=32px total, md:p-6=48px total) */}
+			<div className="flex flex-col lg:flex-row h-[calc(100vh-32px)] md:h-[calc(100vh-48px)] gap-4 lg:gap-6">
+				{/* Left: Preview - 50% width */}
+				<div className="flex-1 bg-black rounded-large overflow-hidden">
 					<iframe
 						srcDoc={previewSrcDoc}
 						sandbox="allow-scripts"
@@ -175,10 +172,9 @@ export default function ProjectPage({
 					/>
 				</div>
 
-				{/* Right: Details & Comments - 50% width, WITH padding */}
-				<div className="h-screen lg:h-full lg:flex-1 border-t lg:border-t-0 lg:border-l border-divider bg-content1 flex flex-col">
-					<ScrollShadow className="flex-1 overflow-auto">
-						{/* This content area has the unified padding */}
+				{/* Right: Details & Comments - 50% width */}
+				<div className="flex-1 border border-divider rounded-large bg-content1 overflow-hidden">
+					<ScrollShadow className="h-full overflow-auto">
 						<div className="p-4 md:p-6 space-y-5">
 							{/* Creator Section with Avatar */}
 							<div className="flex items-center gap-3">
@@ -328,24 +324,20 @@ export default function ProjectPage({
 				</div>
 			</div>
 
-			{/* Bottom: Source Code Tabs - with padding restored via margin */}
-			<div className="-mx-4 md:-mx-6 -mb-4 md:-mb-6 border-t border-divider bg-content1">
+			{/* Bottom: Code Tabs - full width */}
+			<div className="mt-4 lg:mt-6 border border-divider rounded-large bg-content1 overflow-hidden">
 				<Tabs
 					selectedKey={selectedLang}
 					onSelectionChange={(key) => setSelectedLang(key as CodeLanguage)}
-					classNames={{ tabList: "px-4 md:px-6 pt-2", panel: "p-0" }}
+					classNames={{ tabList: "px-4 pt-2", panel: "p-0" }}
 				>
 					<Tab key="html" title="HTML" />
 					<Tab key="css" title="CSS" />
 					<Tab key="js" title="JavaScript" />
 				</Tabs>
-				<Card className="rounded-none border-0 shadow-none">
-					<CardBody className="p-0">
-						<pre className="p-4 md:p-6 text-small overflow-auto max-h-48 bg-content2 font-mono">
-							<code>{codeContent[selectedLang]}</code>
-						</pre>
-					</CardBody>
-				</Card>
+				<pre className="p-4 text-small overflow-auto max-h-48 bg-content2 font-mono">
+					<code>{codeContent[selectedLang]}</code>
+				</pre>
 			</div>
 		</SidebarLayout>
 	);

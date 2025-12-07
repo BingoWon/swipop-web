@@ -25,9 +25,7 @@ export function SidebarLayout({
 			</aside>
 
 			{/* Main Content - padding applied directly to main element */}
-			<main
-				className={`flex-1 overflow-auto ${noPadding ? "" : "p-4 md:p-6"}`}
-			>
+			<main className={`flex-1 overflow-auto ${noPadding ? "" : "p-4 md:p-6"}`}>
 				{children}
 			</main>
 		</div>
