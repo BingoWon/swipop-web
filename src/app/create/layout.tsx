@@ -60,7 +60,7 @@ h1 {
 }`;
 
 export default function CreateLayout({ children }: { children: ReactNode }) {
-	const { user } = useAuth();
+	const { user, loading } = useAuth();
 	const [projectTitle, setProjectTitle] = useState("");
 	const [htmlContent, setHtmlContent] = useState(DEFAULT_HTML);
 	const [cssContent, setCssContent] = useState(DEFAULT_CSS);
@@ -71,6 +71,17 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 	const addMessage = (message: ChatMessage) => {
 		setMessages((prev) => [...prev, message]);
 	};
+
+	// Show loading state while auth is initializing
+	if (loading) {
+		return (
+			<SidebarLayout>
+				<div className="flex items-center justify-center h-full">
+					<div className="animate-pulse text-default-400">Loading...</div>
+				</div>
+			</SidebarLayout>
+		);
+	}
 
 	// Show sign-in prompt for unauthenticated users
 	if (!user) {

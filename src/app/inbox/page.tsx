@@ -59,7 +59,7 @@ function formatTimeAgo(dateString: string): string {
 }
 
 export default function InboxPage() {
-	const { user } = useAuth();
+	const { user, loading: authLoading } = useAuth();
 	const [activities, setActivities] = React.useState<
 		(Activity & { actor?: Profile; project?: Project })[]
 	>([]);
@@ -120,6 +120,17 @@ export default function InboxPage() {
 	};
 
 	const unreadCount = activities.filter((a) => !a.is_read).length;
+
+	// Show loading state while auth is initializing
+	if (authLoading) {
+		return (
+			<SidebarLayout>
+				<div className="flex items-center justify-center h-full">
+					<div className="animate-pulse text-default-400">Loading...</div>
+				</div>
+			</SidebarLayout>
+		);
+	}
 
 	if (!user) {
 		return (

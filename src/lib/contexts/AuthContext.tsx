@@ -24,8 +24,8 @@ const AuthContext = createContext<AuthContextType>({
 	user: null,
 	profile: null,
 	loading: true,
-	signOut: async () => {},
-	refreshProfile: async () => {},
+	signOut: async () => { },
+	refreshProfile: async () => { },
 });
 
 export function useAuth() {
@@ -66,7 +66,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 	useEffect(() => {
 		// Get initial session
-		supabase.auth.getSession().then(({ data: { session } }) => {
+		console.log("[AuthContext] Initializing...");
+		supabase.auth.getSession().then(({ data: { session }, error }) => {
+			console.log("[AuthContext] getSession result:", {
+				hasSession: !!session,
+				userId: session?.user?.id,
+				email: session?.user?.email,
+				error: error?.message,
+			});
 			setUser(session?.user ?? null);
 			if (session?.user) {
 				fetchProfile(session.user.id);
@@ -77,7 +84,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		// Listen for auth changes
 		const {
 			data: { subscription },
-		} = supabase.auth.onAuthStateChange(async (_event, session) => {
+		} = supabase.auth.onAuthStateChange(async (event, session) => {
+			console.log("[AuthContext] onAuthStateChange:", {
+				event,
+				hasSession: !!session,
+				userId: session?.user?.id,
+				email: session?.user?.email,
+			});
 			setUser(session?.user ?? null);
 			if (session?.user) {
 				await fetchProfile(session.user.id);
