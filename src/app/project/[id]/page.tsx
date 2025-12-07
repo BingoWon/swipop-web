@@ -13,6 +13,7 @@ import {
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import React from "react";
+import { CodeBlock } from "@/components/editor/CodeBlock";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { CommentService } from "@/lib/services/comment";
@@ -149,10 +150,10 @@ export default function ProjectPage({
 
 	const previewSrcDoc = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${project.css_content || ""}</style></head><body style="margin:0">${project.html_content || ""}<script>${project.js_content || ""}</script></body></html>`;
 
-	const codeContent: Record<CodeLanguage, string> = {
-		html: project.html_content || "<!-- No HTML content -->",
-		css: project.css_content || "/* No CSS content */",
-		js: project.js_content || "// No JavaScript content",
+	const codeContent: Record<CodeLanguage, { code: string; lang: "html" | "css" | "javascript" }> = {
+		html: { code: project.html_content || "<!-- No HTML content -->", lang: "html" },
+		css: { code: project.css_content || "/* No CSS content */", lang: "css" },
+		js: { code: project.js_content || "// No JavaScript content", lang: "javascript" },
 	};
 
 	const creatorAvatar = project.creator?.avatar_url;
@@ -326,8 +327,8 @@ export default function ProjectPage({
 				</div>
 			</div>
 
-			{/* Bottom: Code Tabs - full width */}
-			<div className="mt-4 lg:mt-6 border border-divider rounded-large bg-content1 overflow-hidden">
+			{/* Bottom: Code Tabs - full viewport height like top section */}
+			<div className="mt-4 lg:mt-6 border border-divider rounded-large bg-content1 overflow-hidden h-[calc(100vh-32px)] md:h-[calc(100vh-48px)] flex flex-col">
 				<Tabs
 					selectedKey={selectedLang}
 					onSelectionChange={(key) => setSelectedLang(key as CodeLanguage)}
@@ -337,9 +338,12 @@ export default function ProjectPage({
 					<Tab key="css" title="CSS" />
 					<Tab key="js" title="JavaScript" />
 				</Tabs>
-				<pre className="p-4 text-small overflow-auto max-h-48 bg-content2 font-mono">
-					<code>{codeContent[selectedLang]}</code>
-				</pre>
+				<div className="flex-1 overflow-hidden rounded-b-large">
+					<CodeBlock
+						code={codeContent[selectedLang].code}
+						language={codeContent[selectedLang].lang}
+					/>
+				</div>
 			</div>
 		</SidebarLayout>
 	);
