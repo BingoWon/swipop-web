@@ -163,199 +163,189 @@ export default function ProjectPage({
 
 	return (
 		<SidebarLayout>
-			<div className="flex flex-col h-screen -m-4 md:-m-6">
-				{/* Top Section: Preview (left 50%) + Details/Comments (right 50%) */}
-				<div className="flex-1 flex flex-col lg:flex-row min-h-0">
-					{/* Left: Preview - h-screen on all devices, 50% width on desktop */}
-					<div className="h-screen lg:flex-1 bg-black shrink-0">
-						<iframe
-							srcDoc={previewSrcDoc}
-							sandbox="allow-scripts"
-							className="w-full h-full border-0"
-							title={project.title || "Project Preview"}
-						/>
-					</div>
+			{/* Main layout - uses full height minus SidebarLayout padding */}
+			<div className="flex flex-col lg:flex-row h-[calc(100vh-48px)] md:h-[calc(100vh-48px)] -mx-4 md:-mx-6 -mt-4 md:-mt-6">
+				{/* Left: Preview - 50% width, edge to edge (no padding) */}
+				<div className="h-screen lg:h-full lg:flex-1 bg-black">
+					<iframe
+						srcDoc={previewSrcDoc}
+						sandbox="allow-scripts"
+						className="w-full h-full border-0"
+						title={project.title || "Project Preview"}
+					/>
+				</div>
 
-					{/* Right: Details & Comments - h-screen on all devices, 50% width on desktop */}
-					<div className="h-screen lg:flex-1 border-t lg:border-t-0 lg:border-l border-divider bg-content1 flex flex-col">
-						<ScrollShadow className="flex-1 overflow-auto">
-							{/* Content area with padding */}
-							<div className="p-4 md:p-6 space-y-5">
-								{/* Creator Section with Avatar */}
-								<div className="flex items-center gap-3">
-									<Link href={`/profile/${project.creator?.username}`}>
-										<Avatar
-											size="md"
-											showFallback
-											name={creatorInitial}
-											src={creatorAvatar || undefined}
-											imgProps={{
-												referrerPolicy: "no-referrer",
-											}}
-										/>
+				{/* Right: Details & Comments - 50% width, WITH padding */}
+				<div className="h-screen lg:h-full lg:flex-1 border-t lg:border-t-0 lg:border-l border-divider bg-content1 flex flex-col">
+					<ScrollShadow className="flex-1 overflow-auto">
+						{/* This content area has the unified padding */}
+						<div className="p-4 md:p-6 space-y-5">
+							{/* Creator Section with Avatar */}
+							<div className="flex items-center gap-3">
+								<Link href={`/profile/${project.creator?.username}`}>
+									<Avatar
+										size="md"
+										showFallback
+										name={creatorInitial}
+										src={creatorAvatar || undefined}
+										imgProps={{
+											referrerPolicy: "no-referrer",
+										}}
+									/>
+								</Link>
+								<div className="flex-1 min-w-0">
+									<Link
+										href={`/profile/${project.creator?.username}`}
+										className="font-medium hover:underline truncate block"
+									>
+										{project.creator?.display_name || project.creator?.username}
 									</Link>
-									<div className="flex-1 min-w-0">
-										<Link
-											href={`/profile/${project.creator?.username}`}
-											className="font-medium hover:underline truncate block"
+									<p className="text-small text-default-400 truncate">
+										@{project.creator?.username}
+									</p>
+								</div>
+								{user && project.creator && user.id !== project.creator.id && (
+									<Button
+										color={isFollowing ? "default" : "primary"}
+										variant={isFollowing ? "bordered" : "solid"}
+										size="sm"
+										onPress={handleFollow}
+									>
+										{isFollowing ? "Following" : "Follow"}
+									</Button>
+								)}
+							</div>
+
+							{/* Title & Description */}
+							<div>
+								<h1 className="text-xl font-bold">
+									{project.title || "Untitled"}
+								</h1>
+								{project.description && (
+									<p className="text-default-500 text-small mt-1">
+										{project.description}
+									</p>
+								)}
+							</div>
+
+							{/* Tags */}
+							{project.tags && project.tags.length > 0 && (
+								<div className="flex flex-wrap gap-1">
+									{project.tags.map((tag) => (
+										<Chip key={tag} size="sm" variant="flat">
+											#{tag}
+										</Chip>
+									))}
+								</div>
+							)}
+
+							{/* Stats Row */}
+							<div className="grid grid-cols-5 gap-1 py-2">
+								<StatTile icon="solar:eye-bold" count={project.view_count} />
+								<StatTile
+									icon={isLiked ? "solar:heart-bold" : "solar:heart-linear"}
+									count={project.like_count}
+									color={isLiked ? "text-danger" : undefined}
+									onClick={user ? handleLike : undefined}
+								/>
+								<StatTile
+									icon="solar:chat-round-dots-bold"
+									count={project.comment_count}
+								/>
+								<StatTile
+									icon={
+										isCollected
+											? "solar:bookmark-bold"
+											: "solar:bookmark-linear"
+									}
+									count={project.collect_count}
+									color={isCollected ? "text-warning" : undefined}
+									onClick={user ? handleCollect : undefined}
+								/>
+								<StatTile icon="solar:share-bold" count={project.share_count} />
+							</div>
+
+							{/* Comment Input */}
+							{user && (
+								<div className="space-y-2 border-t border-divider pt-4">
+									<Textarea
+										placeholder="Add a comment..."
+										value={newComment}
+										onValueChange={setNewComment}
+										minRows={2}
+										size="sm"
+									/>
+									<div className="flex justify-end">
+										<Button
+											color="primary"
+											size="sm"
+											onPress={handleSubmitComment}
+											isLoading={isSubmitting}
+											isDisabled={!newComment.trim()}
 										>
-											{project.creator?.display_name ||
-												project.creator?.username}
-										</Link>
-										<p className="text-small text-default-400 truncate">
-											@{project.creator?.username}
-										</p>
+											Post
+										</Button>
 									</div>
-									{user &&
-										project.creator &&
-										user.id !== project.creator.id && (
-											<Button
-												color={isFollowing ? "default" : "primary"}
-												variant={isFollowing ? "bordered" : "solid"}
-												size="sm"
-												onPress={handleFollow}
-											>
-												{isFollowing ? "Following" : "Follow"}
-											</Button>
-										)}
 								</div>
+							)}
 
-								{/* Title & Description */}
-								<div>
-									<h1 className="text-xl font-bold">
-										{project.title || "Untitled"}
-									</h1>
-									{project.description && (
-										<p className="text-default-500 text-small mt-1">
-											{project.description}
-										</p>
-									)}
-								</div>
-
-								{/* Tags */}
-								{project.tags && project.tags.length > 0 && (
-									<div className="flex flex-wrap gap-1">
-										{project.tags.map((tag) => (
-											<Chip key={tag} size="sm" variant="flat">
-												#{tag}
-											</Chip>
+							{/* Comments List */}
+							<div className="border-t border-divider pt-4">
+								<h3 className="font-medium text-small mb-3">
+									Comments ({comments.length})
+								</h3>
+								{comments.length > 0 ? (
+									<div className="space-y-3">
+										{comments.map((comment) => (
+											<div key={comment.id} className="flex gap-2">
+												<Avatar
+													size="sm"
+													showFallback
+													name={comment.profile?.display_name?.[0] || "U"}
+													src={comment.profile?.avatar_url || undefined}
+												/>
+												<div className="flex-1 min-w-0">
+													<Link
+														href={`/profile/${comment.profile?.username}`}
+														className="text-small font-medium hover:underline"
+													>
+														{comment.profile?.display_name ||
+															comment.profile?.username}
+													</Link>
+													<p className="text-small text-default-500 break-words">
+														{comment.content}
+													</p>
+												</div>
+											</div>
 										))}
 									</div>
+								) : (
+									<p className="text-small text-default-400">No comments yet</p>
 								)}
-
-								{/* Stats Row */}
-								<div className="grid grid-cols-5 gap-1 py-2">
-									<StatTile icon="solar:eye-bold" count={project.view_count} />
-									<StatTile
-										icon={isLiked ? "solar:heart-bold" : "solar:heart-linear"}
-										count={project.like_count}
-										color={isLiked ? "text-danger" : undefined}
-										onClick={user ? handleLike : undefined}
-									/>
-									<StatTile
-										icon="solar:chat-round-dots-bold"
-										count={project.comment_count}
-									/>
-									<StatTile
-										icon={
-											isCollected
-												? "solar:bookmark-bold"
-												: "solar:bookmark-linear"
-										}
-										count={project.collect_count}
-										color={isCollected ? "text-warning" : undefined}
-										onClick={user ? handleCollect : undefined}
-									/>
-									<StatTile
-										icon="solar:share-bold"
-										count={project.share_count}
-									/>
-								</div>
-
-								{/* Comment Input */}
-								{user && (
-									<div className="space-y-2 border-t border-divider pt-4">
-										<Textarea
-											placeholder="Add a comment..."
-											value={newComment}
-											onValueChange={setNewComment}
-											minRows={2}
-											size="sm"
-										/>
-										<div className="flex justify-end">
-											<Button
-												color="primary"
-												size="sm"
-												onPress={handleSubmitComment}
-												isLoading={isSubmitting}
-												isDisabled={!newComment.trim()}
-											>
-												Post
-											</Button>
-										</div>
-									</div>
-								)}
-
-								{/* Comments List */}
-								<div className="border-t border-divider pt-4">
-									<h3 className="font-medium text-small mb-3">
-										Comments ({comments.length})
-									</h3>
-									{comments.length > 0 ? (
-										<div className="space-y-3">
-											{comments.map((comment) => (
-												<div key={comment.id} className="flex gap-2">
-													<Avatar
-														size="sm"
-														showFallback
-														name={comment.profile?.display_name?.[0] || "U"}
-														src={comment.profile?.avatar_url || undefined}
-													/>
-													<div className="flex-1 min-w-0">
-														<Link
-															href={`/profile/${comment.profile?.username}`}
-															className="text-small font-medium hover:underline"
-														>
-															{comment.profile?.display_name ||
-																comment.profile?.username}
-														</Link>
-														<p className="text-small text-default-500 break-words">
-															{comment.content}
-														</p>
-													</div>
-												</div>
-											))}
-										</div>
-									) : (
-										<p className="text-small text-default-400">
-											No comments yet
-										</p>
-									)}
-								</div>
 							</div>
-						</ScrollShadow>
-					</div>
+						</div>
+					</ScrollShadow>
 				</div>
+			</div>
 
-				{/* Bottom: Source Code Tabs */}
-				<div className="border-t border-divider bg-content1 shrink-0">
-					<Tabs
-						selectedKey={selectedLang}
-						onSelectionChange={(key) => setSelectedLang(key as CodeLanguage)}
-						classNames={{ tabList: "px-4 pt-2", panel: "p-0" }}
-					>
-						<Tab key="html" title="HTML" />
-						<Tab key="css" title="CSS" />
-						<Tab key="js" title="JavaScript" />
-					</Tabs>
-					<Card className="rounded-none border-0 shadow-none">
-						<CardBody className="p-0">
-							<pre className="p-4 text-small overflow-auto max-h-48 bg-content2 font-mono">
-								<code>{codeContent[selectedLang]}</code>
-							</pre>
-						</CardBody>
-					</Card>
-				</div>
+			{/* Bottom: Source Code Tabs - with padding restored via margin */}
+			<div className="-mx-4 md:-mx-6 -mb-4 md:-mb-6 border-t border-divider bg-content1">
+				<Tabs
+					selectedKey={selectedLang}
+					onSelectionChange={(key) => setSelectedLang(key as CodeLanguage)}
+					classNames={{ tabList: "px-4 md:px-6 pt-2", panel: "p-0" }}
+				>
+					<Tab key="html" title="HTML" />
+					<Tab key="css" title="CSS" />
+					<Tab key="js" title="JavaScript" />
+				</Tabs>
+				<Card className="rounded-none border-0 shadow-none">
+					<CardBody className="p-0">
+						<pre className="p-4 md:p-6 text-small overflow-auto max-h-48 bg-content2 font-mono">
+							<code>{codeContent[selectedLang]}</code>
+						</pre>
+					</CardBody>
+				</Card>
 			</div>
 		</SidebarLayout>
 	);
