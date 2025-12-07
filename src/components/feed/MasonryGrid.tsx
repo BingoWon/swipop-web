@@ -5,136 +5,66 @@ import type { Project } from "@/lib/types";
 
 interface MasonryGridProps {
 	projects: Project[];
-	columns?: number;
 	gap?: number;
 }
 
 /**
- * True masonry/waterfall grid layout for variable height project cards.
- * Uses CSS columns for proper masonry effect.
- * Default: 5 columns for desktop.
+ * Responsive masonry grid using CSS columns with dynamic column count.
+ * Uses a single DOM render with CSS media queries for column responsiveness.
+ *
+ * Breakpoints:
+ * - Mobile (<640px): 2 columns
+ * - sm (640px-767px): 3 columns
+ * - md (768px-1023px): 4 columns
+ * - lg (1024px+): 5 columns
  */
-export function MasonryGrid({
-	projects,
-	columns = 5,
-	gap = 12,
-}: MasonryGridProps) {
+export function MasonryGrid({ projects, gap = 12 }: MasonryGridProps) {
 	return (
 		<div
-			className="w-full"
-			style={{
-				columnCount: columns,
-				columnGap: `${gap}px`,
-			}}
+			className="w-full masonry-grid"
+			style={
+				{
+					"--masonry-gap": `${gap}px`,
+				} as React.CSSProperties
+			}
 		>
 			{projects.map((project) => (
 				<div
 					key={project.id}
 					className="break-inside-avoid"
-					style={{
-						marginBottom: `${gap}px`,
-					}}
+					style={{ marginBottom: `${gap}px` }}
 				>
 					<ProjectCard project={project} />
 				</div>
 			))}
+
+			{/* Scoped styles using CSS custom properties */}
+			<style jsx>{`
+				.masonry-grid {
+					column-gap: var(--masonry-gap);
+					column-count: 2; /* Mobile default */
+				}
+				@media (min-width: 640px) {
+					.masonry-grid {
+						column-count: 3;
+					}
+				}
+				@media (min-width: 768px) {
+					.masonry-grid {
+						column-count: 4;
+					}
+				}
+				@media (min-width: 1024px) {
+					.masonry-grid {
+						column-count: 5;
+					}
+				}
+			`}</style>
 		</div>
 	);
 }
 
 /**
- * Responsive masonry grid that adjusts columns based on screen size.
- * Default 5 columns on desktop, fewer on smaller screens.
+ * @deprecated Use MasonryGrid instead - this alias is kept for compatibility
  */
-export function ResponsiveMasonryGrid({
-	projects,
-	gap = 12,
-}: Omit<MasonryGridProps, "columns">) {
-	return (
-		<>
-			{/* Mobile: 2 columns */}
-			<div
-				className="block sm:hidden w-full"
-				style={{
-					columnCount: 2,
-					columnGap: `${gap}px`,
-				}}
-			>
-				{projects.map((project) => (
-					<div
-						key={project.id}
-						className="break-inside-avoid"
-						style={{
-							marginBottom: `${gap}px`,
-						}}
-					>
-						<ProjectCard project={project} />
-					</div>
-				))}
-			</div>
-
-			{/* Small tablet: 3 columns */}
-			<div
-				className="hidden sm:block md:hidden w-full"
-				style={{
-					columnCount: 3,
-					columnGap: `${gap}px`,
-				}}
-			>
-				{projects.map((project) => (
-					<div
-						key={project.id}
-						className="break-inside-avoid"
-						style={{
-							marginBottom: `${gap}px`,
-						}}
-					>
-						<ProjectCard project={project} />
-					</div>
-				))}
-			</div>
-
-			{/* Tablet: 4 columns */}
-			<div
-				className="hidden md:block lg:hidden w-full"
-				style={{
-					columnCount: 4,
-					columnGap: `${gap}px`,
-				}}
-			>
-				{projects.map((project) => (
-					<div
-						key={project.id}
-						className="break-inside-avoid"
-						style={{
-							marginBottom: `${gap}px`,
-						}}
-					>
-						<ProjectCard project={project} />
-					</div>
-				))}
-			</div>
-
-			{/* Desktop: 5 columns (default) */}
-			<div
-				className="hidden lg:block w-full"
-				style={{
-					columnCount: 5,
-					columnGap: `${gap}px`,
-				}}
-			>
-				{projects.map((project) => (
-					<div
-						key={project.id}
-						className="break-inside-avoid"
-						style={{
-							marginBottom: `${gap}px`,
-						}}
-					>
-						<ProjectCard project={project} />
-					</div>
-				))}
-			</div>
-		</>
-	);
-}
+export const ResponsiveMasonryGrid = MasonryGrid;
