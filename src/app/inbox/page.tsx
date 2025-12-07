@@ -14,6 +14,7 @@ import {
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import React from "react";
+import { SignInPrompt, signInPrompts } from "@/components/auth/SignInPrompt";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { ActivityService } from "@/lib/services/activity";
@@ -123,20 +124,7 @@ export default function InboxPage() {
 	if (!user) {
 		return (
 			<SidebarLayout>
-				<div className="flex items-center justify-center min-h-screen">
-					<div className="text-center">
-						<Icon
-							icon="solar:inbox-bold"
-							className="text-5xl text-default-300 mx-auto mb-3"
-						/>
-						<p className="text-default-400 mb-4">
-							Sign in to view notifications
-						</p>
-						<Button as={Link} href="/login" color="primary">
-							Sign In
-						</Button>
-					</div>
-				</div>
+				<SignInPrompt {...signInPrompts.inbox} />
 			</SidebarLayout>
 		);
 	}
@@ -214,14 +202,13 @@ export default function InboxPage() {
 										{activities.map((activity) => {
 											const config =
 												activityConfig[
-													activity.type as keyof typeof activityConfig
+												activity.type as keyof typeof activityConfig
 												] || activityConfig.like;
 											return (
 												<div
 													key={activity.id}
-													className={`flex items-start gap-3 p-4 hover:bg-default-50 transition-colors cursor-pointer ${
-														!activity.is_read ? "bg-primary-50/30" : ""
-													}`}
+													className={`flex items-start gap-3 p-4 hover:bg-default-50 transition-colors cursor-pointer ${!activity.is_read ? "bg-primary-50/30" : ""
+														}`}
 													onClick={() =>
 														!activity.is_read && handleMarkAsRead(activity.id)
 													}

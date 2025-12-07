@@ -10,7 +10,9 @@ import {
 	type Key,
 } from "react";
 import type { ChatMessage } from "@/components/ai/MessageCard";
+import { SignInPrompt, signInPrompts } from "@/components/auth/SignInPrompt";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
+import { useAuth } from "@/lib/contexts/AuthContext";
 
 interface ProjectEditorContextType {
 	projectTitle: string;
@@ -58,6 +60,7 @@ h1 {
 }`;
 
 export default function CreateLayout({ children }: { children: ReactNode }) {
+	const { user } = useAuth();
 	const [projectTitle, setProjectTitle] = useState("");
 	const [htmlContent, setHtmlContent] = useState(DEFAULT_HTML);
 	const [cssContent, setCssContent] = useState(DEFAULT_CSS);
@@ -68,6 +71,17 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 	const addMessage = (message: ChatMessage) => {
 		setMessages((prev) => [...prev, message]);
 	};
+
+	// Show sign-in prompt for unauthenticated users
+	if (!user) {
+		return (
+			<SidebarLayout>
+				<SignInPrompt {...signInPrompts.create} />
+			</SidebarLayout>
+		);
+	}
+
+
 
 	const previewSrcDoc = `<!DOCTYPE html>
 <html>
