@@ -107,12 +107,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
 							{creatorName}
 						</span>
 
-						{/* Like button - larger icons and text, more spacing */}
+						{/* Like button - relative z-10 ensures clickable above Link */}
 						<button
 							type="button"
 							onClick={handleLike}
 							disabled={!user || isLoading}
-							className="flex items-center gap-1.5 min-w-[52px] h-8 justify-end disabled:opacity-50 hover:opacity-80 transition-opacity"
+							className="relative z-10 flex items-center gap-1.5 min-w-[52px] h-8 justify-end disabled:opacity-50 hover:opacity-80 transition-opacity"
 						>
 							<Icon
 								icon={isLiked ? "solar:heart-bold" : "solar:heart-linear"}

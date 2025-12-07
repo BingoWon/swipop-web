@@ -5,10 +5,14 @@ import { AppSidebar } from "./AppSidebar";
 
 interface SidebarLayoutProps {
 	children: React.ReactNode;
-	/** Disable default padding (for full-bleed pages like project viewer) */
+	/** Disable default padding for full-bleed pages */
 	noPadding?: boolean;
 }
 
+/**
+ * Main layout component with sidebar
+ * Provides consistent p-4/md:p-6 padding unless noPadding is set
+ */
 export function SidebarLayout({
 	children,
 	noPadding = false,
@@ -20,9 +24,11 @@ export function SidebarLayout({
 				<AppSidebar />
 			</aside>
 
-			{/* Main Content with unified padding */}
-			<main className="flex-1 overflow-auto">
-				<div className={noPadding ? "" : "p-4 md:p-6"}>{children}</div>
+			{/* Main Content - padding applied directly to main element */}
+			<main
+				className={`flex-1 overflow-auto ${noPadding ? "" : "p-4 md:p-6"}`}
+			>
+				{children}
 			</main>
 		</div>
 	);

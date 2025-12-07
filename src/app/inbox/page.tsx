@@ -143,7 +143,7 @@ export default function InboxPage() {
 
 	return (
 		<SidebarLayout>
-			<div className="min-h-screen px-4 py-4">
+			<div className="min-h-screen">
 				<div className="max-w-2xl mx-auto">
 					{/* Header */}
 					<div className="flex items-center justify-between mb-6">
@@ -214,14 +214,13 @@ export default function InboxPage() {
 										{activities.map((activity) => {
 											const config =
 												activityConfig[
-													activity.type as keyof typeof activityConfig
+												activity.type as keyof typeof activityConfig
 												] || activityConfig.like;
 											return (
 												<div
 													key={activity.id}
-													className={`flex items-start gap-3 p-4 hover:bg-default-50 transition-colors cursor-pointer ${
-														!activity.is_read ? "bg-primary-50/30" : ""
-													}`}
+													className={`flex items-start gap-3 p-4 hover:bg-default-50 transition-colors cursor-pointer ${!activity.is_read ? "bg-primary-50/30" : ""
+														}`}
 													onClick={() =>
 														!activity.is_read && handleMarkAsRead(activity.id)
 													}

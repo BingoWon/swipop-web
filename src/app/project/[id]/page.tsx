@@ -6,12 +6,14 @@ import {
 	Card,
 	CardBody,
 	Chip,
+	ScrollShadow,
 	Spinner,
 	Tab,
 	Tabs,
 	Textarea,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
@@ -129,7 +131,7 @@ export default function ProjectPage({
 	if (loading) {
 		return (
 			<SidebarLayout noPadding>
-				<div className="flex items-center justify-center min-h-screen">
+				<div className="flex items-center justify-center h-screen">
 					<Spinner size="lg" />
 				</div>
 			</SidebarLayout>
@@ -139,7 +141,7 @@ export default function ProjectPage({
 	if (!project) {
 		return (
 			<SidebarLayout noPadding>
-				<div className="flex items-center justify-center min-h-screen">
+				<div className="flex items-center justify-center h-screen">
 					<p className="text-default-500">Project not found</p>
 				</div>
 			</SidebarLayout>
@@ -154,32 +156,41 @@ export default function ProjectPage({
 		js: project.js_content || "// No JavaScript content",
 	};
 
+	const creatorAvatar = project.creator?.avatar_url;
+	const creatorInitial =
+		project.creator?.display_name?.[0] ||
+		project.creator?.username?.[0] ||
+		"U";
+
 	return (
 		<SidebarLayout noPadding>
-			<div className="flex flex-col h-screen">
-				{/* Top Section: Preview + Details */}
-				<div className="flex-1 flex flex-col lg:flex-row min-h-0">
-					{/* Left: Preview */}
-					<div className="flex-1 bg-black min-h-[300px] lg:min-h-0">
-						<iframe
-							srcDoc={previewSrcDoc}
-							sandbox="allow-scripts"
-							className="w-full h-full border-0"
-							title={project.title || "Project Preview"}
-						/>
-					</div>
+			{/* Desktop: side by side 1:1, Mobile: stacked full height each */}
+			<div className="flex flex-col lg:flex-row h-screen">
+				{/* Left: Preview - full viewport height on mobile, 50% width on desktop */}
+				<div className="h-screen lg:h-auto lg:flex-1 bg-black shrink-0">
+					<iframe
+						srcDoc={previewSrcDoc}
+						sandbox="allow-scripts"
+						className="w-full h-full border-0"
+						title={project.title || "Project Preview"}
+					/>
+				</div>
 
-					{/* Right: Details & Comments */}
-					<div className="w-full lg:w-96 border-l border-divider bg-content1 overflow-auto">
-						<div className="p-4 space-y-4">
-							{/* Creator */}
+				{/* Right: Details & Comments - full viewport height on mobile, 50% width on desktop */}
+				<div className="h-screen lg:h-auto lg:flex-1 border-t lg:border-t-0 lg:border-l border-divider bg-content1 flex flex-col">
+					<ScrollShadow className="flex-1 overflow-auto">
+						<div className="p-6 space-y-5">
+							{/* Creator Section with Avatar */}
 							<div className="flex items-center gap-3">
 								<Link href={`/profile/${project.creator?.username}`}>
 									<Avatar
 										size="md"
 										showFallback
-										name={project.creator?.display_name?.[0] || "U"}
-										src={project.creator?.avatar_url || undefined}
+										name={creatorInitial}
+										src={creatorAvatar || undefined}
+										imgProps={{
+											referrerPolicy: "no-referrer",
+										}}
 									/>
 								</Link>
 								<div className="flex-1 min-w-0">
@@ -228,7 +239,7 @@ export default function ProjectPage({
 								</div>
 							)}
 
-							{/* Stats Row (matching iOS actionsSection) */}
+							{/* Stats Row */}
 							<div className="grid grid-cols-5 gap-1 py-2">
 								<StatTile icon="solar:eye-bold" count={project.view_count} />
 								<StatTile
@@ -254,9 +265,32 @@ export default function ProjectPage({
 								<StatTile icon="solar:share-bold" count={project.share_count} />
 							</div>
 
+							{/* Source Code Tabs */}
+							<div className="border-t border-divider pt-4">
+								<Tabs
+									selectedKey={selectedLang}
+									onSelectionChange={(key) =>
+										setSelectedLang(key as CodeLanguage)
+									}
+									size="sm"
+									classNames={{ tabList: "mb-2" }}
+								>
+									<Tab key="html" title="HTML" />
+									<Tab key="css" title="CSS" />
+									<Tab key="js" title="JavaScript" />
+								</Tabs>
+								<Card className="shadow-none border border-divider">
+									<CardBody className="p-0">
+										<pre className="p-3 text-xs overflow-auto max-h-40 bg-content2 font-mono">
+											<code>{codeContent[selectedLang]}</code>
+										</pre>
+									</CardBody>
+								</Card>
+							</div>
+
 							{/* Comment Input */}
 							{user && (
-								<div className="space-y-2">
+								<div className="space-y-2 border-t border-divider pt-4">
 									<Textarea
 										placeholder="Add a comment..."
 										value={newComment}
@@ -279,7 +313,7 @@ export default function ProjectPage({
 							)}
 
 							{/* Comments List */}
-							<div>
+							<div className="border-t border-divider pt-4">
 								<h3 className="font-medium text-small mb-3">
 									Comments ({comments.length})
 								</h3>
@@ -313,27 +347,7 @@ export default function ProjectPage({
 								)}
 							</div>
 						</div>
-					</div>
-				</div>
-
-				{/* Bottom: Source Code */}
-				<div className="border-t border-divider bg-content1">
-					<Tabs
-						selectedKey={selectedLang}
-						onSelectionChange={(key) => setSelectedLang(key as CodeLanguage)}
-						classNames={{ tabList: "px-4 pt-2", panel: "p-0" }}
-					>
-						<Tab key="html" title="HTML" />
-						<Tab key="css" title="CSS" />
-						<Tab key="js" title="JavaScript" />
-					</Tabs>
-					<Card className="rounded-none border-0 shadow-none">
-						<CardBody className="p-0">
-							<pre className="p-4 text-small overflow-auto max-h-64 bg-content2 font-mono">
-								<code>{codeContent[selectedLang]}</code>
-							</pre>
-						</CardBody>
-					</Card>
+					</ScrollShadow>
 				</div>
 			</div>
 		</SidebarLayout>
