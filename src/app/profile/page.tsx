@@ -12,8 +12,8 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 export default function ProfilePage() {
     const { user, profile, loading } = useAuth();
 
-    // Show loading state briefly
-    if (loading) {
+    // Show loading state while auth or profile is loading
+    if (loading || (user && !profile)) {
         return (
             <SidebarLayout>
                 <div className="flex items-center justify-center h-full">
@@ -32,7 +32,7 @@ export default function ProfilePage() {
         );
     }
 
-    // Redirect to user's profile page
-    const username = profile?.username || user.id;
-    redirect(`/profile/${username}`);
+    // Redirect to user's profile page (profile is guaranteed to exist here)
+    redirect(`/profile/${profile!.username}`);
 }
+
