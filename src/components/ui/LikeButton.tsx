@@ -3,6 +3,7 @@
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { useInteractionStore } from "@/lib/stores/interaction";
+import { formatCount } from "@/lib/utils/format";
 
 interface LikeButtonProps {
     projectId: string;
@@ -48,10 +49,4 @@ export function LikeButton({ projectId, size = "compact" }: LikeButtonProps) {
             </span>
         </button>
     );
-}
-
-function formatCount(count: number): string {
-    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
-    if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
-    return count.toString();
 }

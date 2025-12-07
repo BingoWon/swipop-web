@@ -1,4 +1,4 @@
-import { type SidebarItem, SidebarItemType } from "./Sidebar";
+import type { SidebarItem } from "./Sidebar";
 
 /**
  * Sidebar items for Swipop navigation
