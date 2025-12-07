@@ -176,9 +176,8 @@ export default function ProjectPage({
 						onSelectionChange={(key: Key) => setActiveTab(key as TabKey)}
 						classNames={{
 							tabList: "px-4 pt-2",
-							panel: "flex-1 overflow-hidden p-0",
+							panel: "hidden",
 						}}
-						className="flex-1 flex flex-col"
 					>
 						<Tab
 							key="info"
