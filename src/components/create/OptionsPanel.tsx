@@ -3,7 +3,7 @@
 import { Button, Card, CardBody, Chip, Input, Progress, Radio, RadioGroup, Switch, Textarea } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useProjectEditor, AI_MODELS, type AIModel } from "@/app/create/layout";
 import { ASPECT_RATIOS, type ThumbnailAspectRatio } from "@/lib/services/thumbnail";
 
@@ -46,8 +46,10 @@ export function OptionsPanel() {
 
     const usagePercentage = USABLE_LIMIT > 0 ? promptTokens / USABLE_LIMIT : 0;
 
-    // Thumbnail preview URL (local blob or remote)
-    const thumbnailPreviewUrl = thumbnailBlob ? URL.createObjectURL(thumbnailBlob) : thumbnailUrl;
+    // Thumbnail preview URL with proper cleanup
+    const blobUrl = useMemo(() => thumbnailBlob ? URL.createObjectURL(thumbnailBlob) : null, [thumbnailBlob]);
+    useEffect(() => () => { if (blobUrl) URL.revokeObjectURL(blobUrl); }, [blobUrl]);
+    const thumbnailPreviewUrl = blobUrl || thumbnailUrl;
     const hasThumbnail = !!thumbnailPreviewUrl;
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,6 +59,7 @@ export function OptionsPanel() {
         }
         e.target.value = ""; // Reset for re-upload
     };
+
 
     return (
         <div className="h-full overflow-auto p-4 space-y-6">

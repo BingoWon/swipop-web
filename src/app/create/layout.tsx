@@ -8,7 +8,7 @@ import { SignInPrompt, signInPrompts } from "@/components/auth/SignInPrompt";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { PageLoading } from "@/components/ui/LoadingState";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { ThumbnailService, type ThumbnailAspectRatio } from "@/lib/services/thumbnail";
+import { ThumbnailService, ASPECT_RATIOS, type ThumbnailAspectRatio } from "@/lib/services/thumbnail";
 import { createClient } from "@/lib/supabase/client";
 import type { Project } from "@/lib/types";
 
@@ -299,7 +299,7 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 			let finalThumbnailUrl = thumbnailUrl;
 			let finalAspectRatio = thumbnailAspectRatio;
 			if (thumbnailBlob && effectiveProjectId) {
-				const result = await ThumbnailService.upload(thumbnailBlob, effectiveProjectId);
+				const result = await ThumbnailService.upload(thumbnailBlob, effectiveProjectId, thumbnailAspectRatio!);
 				finalThumbnailUrl = result.url;
 				finalAspectRatio = result.aspectRatio;
 				setThumbnailUrl(result.url);
@@ -360,23 +360,20 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 
 		setIsCapturingThumbnail(true);
 		try {
-			const { ASPECT_RATIOS } = await import("@/lib/services/thumbnail");
 			const canvas = await html2canvas(iframe.contentDocument.body, {
 				useCORS: true,
 				allowTaint: true,
 				backgroundColor: "#000",
 			});
 
-			// Create temp image from canvas
 			const dataUrl = canvas.toDataURL("image/png");
-			const img = await ThumbnailService.urlToImage(dataUrl);
-
-			// Crop to aspect ratio
-			const croppedCanvas = ThumbnailService.cropToRatio(img, ASPECT_RATIOS[aspectRatio].ratio);
+			const img = await ThumbnailService.loadImage(dataUrl);
+			const ratio = ASPECT_RATIOS[aspectRatio].ratio;
+			const croppedCanvas = ThumbnailService.cropToRatio(img, ratio);
 			const blob = await ThumbnailService.canvasToBlob(croppedCanvas);
 
 			setThumbnailBlob(blob);
-			setThumbnailAspectRatio(ASPECT_RATIOS[aspectRatio].ratio);
+			setThumbnailAspectRatio(ratio);
 			markDirty();
 		} catch (err) {
 			console.error("Failed to capture thumbnail:", err);
@@ -388,26 +385,29 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 	// Set thumbnail from uploaded file
 	const setThumbnailFromFile = useCallback(async (file: File, aspectRatio: ThumbnailAspectRatio) => {
 		try {
-			const { ASPECT_RATIOS } = await import("@/lib/services/thumbnail");
-			const img = await ThumbnailService.fileToImage(file);
-			const croppedCanvas = ThumbnailService.cropToRatio(img, ASPECT_RATIOS[aspectRatio].ratio);
+			const img = await ThumbnailService.loadImage(file);
+			const ratio = ASPECT_RATIOS[aspectRatio].ratio;
+			const croppedCanvas = ThumbnailService.cropToRatio(img, ratio);
 			const blob = await ThumbnailService.canvasToBlob(croppedCanvas);
 
 			setThumbnailBlob(blob);
-			setThumbnailAspectRatio(ASPECT_RATIOS[aspectRatio].ratio);
+			setThumbnailAspectRatio(ratio);
 			markDirty();
 		} catch (err) {
 			console.error("Failed to process file:", err);
 		}
 	}, [markDirty]);
 
-	// Remove thumbnail
-	const removeThumbnail = useCallback(() => {
+	// Remove thumbnail (local and remote)
+	const removeThumbnail = useCallback(async () => {
+		if (projectId && thumbnailUrl) {
+			await ThumbnailService.delete(projectId).catch(console.error);
+		}
 		setThumbnailBlob(null);
 		setThumbnailUrl(null);
 		setThumbnailAspectRatio(null);
 		markDirty();
-	}, [markDirty]);
+	}, [projectId, thumbnailUrl, markDirty]);
 
 	// Real-time auto-save with debounce (2 seconds)
 	const AUTO_SAVE_DELAY = 2000;

@@ -21,6 +21,28 @@ export interface ThumbnailUploadResult {
  * Handles image cropping and upload to Supabase Storage
  */
 export const ThumbnailService = {
+    /** Load image from any source (File, Blob, or data URL) */
+    loadImage(source: File | Blob | string): Promise<HTMLImageElement> {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const isObjectUrl = source instanceof Blob;
+            const url = isObjectUrl ? URL.createObjectURL(source) : source;
+
+            img.onload = () => {
+                if (isObjectUrl) URL.revokeObjectURL(url);
+                resolve(img);
+            };
+            img.onerror = () => {
+                if (isObjectUrl) URL.revokeObjectURL(url);
+                reject(new Error("Failed to load image"));
+            };
+            if (typeof source === "string" && !source.startsWith("data:")) {
+                img.crossOrigin = "anonymous";
+            }
+            img.src = url;
+        });
+    },
+
     /** Crop image to specified aspect ratio (center crop) */
     cropToRatio(image: HTMLImageElement, targetRatio: number): HTMLCanvasElement {
         const { naturalWidth: w, naturalHeight: h } = image;
@@ -32,17 +54,14 @@ export const ThumbnailService = {
         let offsetY = 0;
 
         if (currentRatio > targetRatio) {
-            // Image is wider, crop horizontally
             cropWidth = h * targetRatio;
             offsetX = (w - cropWidth) / 2;
         } else {
-            // Image is taller, crop vertically
             cropHeight = w / targetRatio;
             offsetY = (h - cropHeight) / 2;
         }
 
         const canvas = document.createElement("canvas");
-        // Max dimension 1200px for reasonable file size
         const maxDim = 1200;
         const scale = Math.min(1, maxDim / Math.max(cropWidth, cropHeight));
         canvas.width = cropWidth * scale;
@@ -55,7 +74,7 @@ export const ThumbnailService = {
     },
 
     /** Convert canvas to JPEG blob */
-    async canvasToBlob(canvas: HTMLCanvasElement, quality = 0.8): Promise<Blob> {
+    canvasToBlob(canvas: HTMLCanvasElement, quality = 0.8): Promise<Blob> {
         return new Promise((resolve, reject) => {
             canvas.toBlob(
                 (blob) => (blob ? resolve(blob) : reject(new Error("Failed to convert to blob"))),
@@ -66,7 +85,7 @@ export const ThumbnailService = {
     },
 
     /** Upload thumbnail to Supabase Storage */
-    async upload(blob: Blob, projectId: string): Promise<ThumbnailUploadResult> {
+    async upload(blob: Blob, projectId: string, aspectRatio: number): Promise<ThumbnailUploadResult> {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
@@ -81,10 +100,6 @@ export const ThumbnailService = {
 
         const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
-        // Calculate aspect ratio from blob dimensions
-        const img = await this.blobToImage(blob);
-        const aspectRatio = img.naturalWidth / img.naturalHeight;
-
         return { url: publicUrl, aspectRatio };
     },
 
@@ -96,36 +111,5 @@ export const ThumbnailService = {
 
         const path = `${user.id}/${projectId}.jpg`;
         await supabase.storage.from(BUCKET).remove([path]);
-    },
-
-    /** Helper: Load image from File */
-    async fileToImage(file: File): Promise<HTMLImageElement> {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = reject;
-            img.src = URL.createObjectURL(file);
-        });
-    },
-
-    /** Helper: Load image from Blob */
-    async blobToImage(blob: Blob): Promise<HTMLImageElement> {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = reject;
-            img.src = URL.createObjectURL(blob);
-        });
-    },
-
-    /** Helper: Load image from URL */
-    async urlToImage(url: string): Promise<HTMLImageElement> {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.onload = () => resolve(img);
-            img.onerror = reject;
-            img.src = url;
-        });
     },
 };
