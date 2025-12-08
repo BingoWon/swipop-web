@@ -19,6 +19,9 @@ interface InteractionStore {
         projects: Array<{ id: string; like_count: number }>,
     ) => void;
 
+    // Set liked projects (hydrate from server)
+    setLikedProjects: (projectIds: string[]) => void;
+
     // Toggle like with optimistic update
     toggleLike: (projectId: string, userId: string) => Promise<void>;
 
@@ -42,6 +45,19 @@ export const useInteractionStore = create<InteractionStore>()(
                         newStates[project.id] = {
                             isLiked: newStates[project.id]?.isLiked ?? false,
                             likeCount: project.like_count,
+                        };
+                    }
+                    return { states: newStates };
+                });
+            },
+
+            setLikedProjects: (projectIds) => {
+                set((state) => {
+                    const newStates = { ...state.states };
+                    for (const id of projectIds) {
+                        newStates[id] = {
+                            isLiked: true,
+                            likeCount: newStates[id]?.likeCount ?? 0,
                         };
                     }
                     return { states: newStates };

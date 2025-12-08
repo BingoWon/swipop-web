@@ -86,6 +86,15 @@ export const InteractionService = {
 		return data?.reduce((sum, p) => sum + (p.like_count || 0), 0) ?? 0;
 	},
 
+	// Fetch project IDs liked by a user (lightweight, for hydrating like state)
+	async fetchLikedProjectIds(userId: string): Promise<string[]> {
+		const { data } = await supabase()
+			.from("likes")
+			.select("project_id")
+			.eq("user_id", userId);
+		return data?.map((d) => d.project_id) ?? [];
+	},
+
 	// Fetch projects liked by a user
 	async fetchLikedProjects(userId: string): Promise<Project[]> {
 		const { data } = await supabase()
