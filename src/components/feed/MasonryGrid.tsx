@@ -6,60 +6,27 @@ import type { Project } from "@/lib/types";
 interface MasonryGridProps {
 	projects: Project[];
 	gap?: number;
+	minColumnWidth?: number;
 }
 
 /**
- * Responsive masonry grid using CSS columns with dynamic column count.
- * Uses a single DOM render with CSS media queries for column responsiveness.
- *
- * Breakpoints:
- * - Mobile (<640px): 2 columns
- * - sm (640px-767px): 3 columns
- * - md (768px-1023px): 4 columns
- * - lg (1024px+): 5 columns
+ * Responsive masonry grid with adaptive column count.
+ * Columns are automatically calculated based on container width.
+ * Each column is at least minColumnWidth (default 200px) and fills remaining space.
  */
-export function MasonryGrid({ projects, gap = 12 }: MasonryGridProps) {
+export function MasonryGrid({ projects, gap = 8, minColumnWidth = 200 }: MasonryGridProps) {
 	return (
 		<div
-			className="w-full masonry-grid"
-			style={
-				{
-					"--masonry-gap": `${gap}px`,
-				} as React.CSSProperties
-			}
+			className="w-full"
+			style={{
+				display: "grid",
+				gridTemplateColumns: `repeat(auto-fill, minmax(${minColumnWidth}px, 1fr))`,
+				gap: `${gap}px`,
+			}}
 		>
 			{projects.map((project) => (
-				<div
-					key={project.id}
-					className="break-inside-avoid"
-					style={{ marginBottom: `${gap}px` }}
-				>
-					<ProjectCard project={project} />
-				</div>
+				<ProjectCard key={project.id} project={project} />
 			))}
-
-			{/* Scoped styles using CSS custom properties */}
-			<style jsx>{`
-				.masonry-grid {
-					column-gap: var(--masonry-gap);
-					column-count: 2; /* Mobile default */
-				}
-				@media (min-width: 640px) {
-					.masonry-grid {
-						column-count: 3;
-					}
-				}
-				@media (min-width: 768px) {
-					.masonry-grid {
-						column-count: 4;
-					}
-				}
-				@media (min-width: 1024px) {
-					.masonry-grid {
-						column-count: 5;
-					}
-				}
-			`}</style>
 		</div>
 	);
 }

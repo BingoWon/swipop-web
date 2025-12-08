@@ -283,32 +283,31 @@ function ProfileProjectCell({
 	);
 }
 
-// Masonry Grid (3 columns, matches iOS MasonryGrid)
+// Masonry Grid (adaptive columns, auto-calculated based on container width)
 function MasonryGrid({
 	projects,
 	showDraftBadges,
+	minColumnWidth = 150,
 }: {
 	projects: Project[];
 	showDraftBadges?: boolean;
+	minColumnWidth?: number;
 }) {
-	// Distribute projects into 3 columns
-	const columns: Project[][] = [[], [], []];
-	projects.forEach((project, i) => {
-		columns[i % 3].push(project);
-	});
-
 	return (
-		<div className="grid grid-cols-3 gap-2 mt-4">
-			{columns.map((column, colIndex) => (
-				<div key={colIndex} className="flex flex-col gap-2">
-					{column.map((project) => (
-						<ProfileProjectCell
-							key={project.id}
-							project={project}
-							showDraftBadge={showDraftBadges && !project.is_published}
-						/>
-					))}
-				</div>
+		<div
+			className="mt-4"
+			style={{
+				display: "grid",
+				gridTemplateColumns: `repeat(auto-fill, minmax(${minColumnWidth}px, 1fr))`,
+				gap: "8px",
+			}}
+		>
+			{projects.map((project) => (
+				<ProfileProjectCell
+					key={project.id}
+					project={project}
+					showDraftBadge={showDraftBadges && !project.is_published}
+				/>
 			))}
 		</div>
 	);
