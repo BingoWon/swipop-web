@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, Card, CardBody, Chip, cn, Progress } from "@heroui/react";
+import { Avatar, Card, CardBody, cn } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useState, useEffect } from "react";
 import { type Message, type Segment } from "@/app/create/layout";
@@ -8,15 +8,16 @@ import { type Message, type Segment } from "@/app/create/layout";
 // Constants
 const AI_AVATAR_URL = "https://nextuipro.nyc3.cdn.digitaloceanspaces.com/components-images/avatar_ai.png";
 
-const TOOL_CONFIG: Record<string, { icon: string; label: string }> = {
-	write_html: { icon: "solar:code-bold", label: "HTML" },
-	write_css: { icon: "solar:pallete-2-bold", label: "CSS" },
-	write_javascript: { icon: "solar:programming-bold", label: "JavaScript" },
-	replace_in_html: { icon: "solar:code-bold", label: "HTML" },
-	replace_in_css: { icon: "solar:pallete-2-bold", label: "CSS" },
-	replace_in_javascript: { icon: "solar:programming-bold", label: "JavaScript" },
-	update_metadata: { icon: "solar:document-text-bold", label: "Metadata" },
-	summarize_conversation: { icon: "solar:document-text-bold", label: "Summary" },
+// Tool icons matching iOS ToolCallView.swift
+const TOOL_ICONS: Record<string, string> = {
+	write_html: "solar:code-bold",
+	write_css: "solar:pallete-2-bold",
+	write_javascript: "solar:programming-bold",
+	replace_in_html: "solar:code-bold",
+	replace_in_css: "solar:pallete-2-bold",
+	replace_in_javascript: "solar:programming-bold",
+	update_metadata: "solar:document-text-bold",
+	summarize_conversation: "solar:document-text-bold",
 };
 
 // Re-export types from layout for convenience
@@ -33,7 +34,7 @@ export function MessageCard({ message }: MessageCardProps) {
 		<div className={cn("flex gap-3", isUser && "flex-row-reverse")}>
 			{!isUser && <Avatar src={AI_AVATAR_URL} showFallback name="AI" size="sm" className="shrink-0" />}
 
-			<div className={cn("flex flex-col gap-2 max-w-[85%]", isUser ? "items-end" : "items-start")}>
+			<div className={cn("flex flex-col gap-2", isUser ? "items-end" : "items-start")}>
 				{message.segments.map((segment, i) => renderSegment(segment, i, isUser))}
 			</div>
 
@@ -67,49 +68,64 @@ interface ToolCallSegmentProps {
 	segment: Extract<Segment, { type: "tool_call" }>;
 }
 
+/**
+ * Tool call segment - matches iOS ToolCallView.swift
+ * Uses "Calling/Called" text pattern, displays full tool name
+ */
 function ToolCallSegment({ segment }: ToolCallSegmentProps) {
-	const { name, isStreaming, result } = segment;
+	const { name, arguments: args, isStreaming, result } = segment;
 	const isComplete = !isStreaming && result !== undefined;
-	const config = TOOL_CONFIG[name] || { icon: "solar:widget-bold", label: name };
+	const icon = TOOL_ICONS[name] || "solar:widget-bold";
 
-	const actionPrefix = name.startsWith("write_") ? "Writing" : name.startsWith("replace_in_") ? "Editing" : "Updating";
-	const statusText = isComplete ? `Called ${config.label}` : `${actionPrefix} ${config.label}...`;
-	const resultText = isComplete ? parseToolResult(result) : "";
+	const [isExpanded, setIsExpanded] = useState(false);
+	const hasContent = args.length > 0;
 
 	return (
-		<Card className={cn("bg-content2 border", isComplete ? "border-success/30" : "border-warning/40")}>
-			<CardBody className="p-3">
-				<div className="flex items-center gap-2">
+		<Card
+			className={cn(
+				"border overflow-hidden",
+				isComplete ? "border-success/30 bg-content2" : "border-warning/40 bg-content2",
+			)}
+			isPressable={hasContent}
+			onPress={() => hasContent && setIsExpanded(!isExpanded)}
+		>
+			{/* Header - matches iOS layout */}
+			<div className="flex items-center gap-2 px-3 py-2.5 shrink-0">
+				<Icon
+					icon={icon}
+					className={cn("text-base shrink-0", isStreaming ? "text-warning" : "text-success")}
+				/>
+				<span className="text-small font-medium whitespace-nowrap shrink-0">
+					{isStreaming ? `Calling ${name}...` : `Called ${name}`}
+				</span>
+				{isStreaming && (
+					<div className="w-3 h-3 border-2 border-warning border-t-transparent rounded-full animate-spin shrink-0" />
+				)}
+				{hasContent && (
 					<Icon
-						icon={isComplete ? "solar:check-circle-bold" : "solar:refresh-bold"}
-						className={cn("text-lg", isComplete ? "text-success" : "text-warning animate-spin")}
+						icon="solar:alt-arrow-right-linear"
+						className={cn("text-default-400 ml-auto shrink-0 transition-transform", isExpanded && "rotate-90")}
 					/>
-					<Icon icon={config.icon} className="text-default-500" />
-					<span className="text-small font-medium">{statusText}</span>
-					{!isComplete && <Progress size="sm" isIndeterminate color="warning" className="max-w-[60px]" />}
-					{resultText && (
-						<Chip size="sm" variant="flat" color="success" className="ml-auto">
-							{resultText}
-						</Chip>
+				)}
+			</div>
+
+			{/* Expanded content - matches iOS */}
+			{isExpanded && hasContent && (
+				<>
+					<div className="border-t border-divider px-3 py-2">
+						<p className="text-tiny text-default-500 mb-1">{isStreaming ? "Arguments (streaming...)" : "Arguments"}</p>
+						<pre className="text-tiny font-mono text-foreground/80 whitespace-pre-wrap max-h-[200px] overflow-auto">{args}</pre>
+					</div>
+					{result && (
+						<div className="border-t border-divider px-3 py-2">
+							<p className="text-tiny text-default-500 mb-1">Result</p>
+							<pre className="text-tiny font-mono text-success whitespace-pre-wrap">{result}</pre>
+						</div>
 					)}
-				</div>
-			</CardBody>
+				</>
+			)}
 		</Card>
 	);
-}
-
-function parseToolResult(result?: string): string {
-	if (!result) return "";
-	try {
-		const obj = JSON.parse(result);
-		if (!obj.success) return obj.error || "";
-		if (typeof obj.lines === "number") return `${obj.lines} lines`;
-		if (typeof obj.replaced === "number") return "1 change";
-		if (obj.action === "conversation_summarized") return "Compacted";
-		return "Done";
-	} catch {
-		return "Done";
-	}
 }
 
 interface ThinkingSegmentProps {
@@ -130,30 +146,28 @@ function ThinkingSegment({ text, isActive }: ThinkingSegmentProps) {
 
 	return (
 		<Card
-			className={cn("w-full cursor-pointer transition-colors border", isActive ? "bg-primary/10 border-primary/30" : "bg-content2/50 border-divider")}
+			className={cn("cursor-pointer transition-colors border", isActive ? "bg-primary/10 border-primary/30" : "bg-content2/50 border-divider")}
 			isPressable={!!text}
 			onPress={() => text && setIsExpanded(!isExpanded)}
 		>
-			<CardBody className="p-3">
-				<div className="flex items-center gap-2">
-					<Icon icon="solar:brain-bold" className={cn("text-lg", isActive ? "text-primary animate-pulse" : "text-primary/80")} />
-					<span className="text-small font-medium">{isActive ? `Thinking ${elapsed}s` : `Thought for ${elapsed || "..."}s`}</span>
-					{isActive && <ShimmerBar />}
-					{text && <Icon icon="solar:alt-arrow-right-linear" className={cn("text-default-400 ml-auto transition-transform", isExpanded && "rotate-90")} />}
+			<div className="flex items-center gap-2 px-3 py-2.5">
+				<Icon icon="solar:brain-bold" className={cn("text-base shrink-0", isActive ? "text-primary animate-pulse" : "text-primary/80")} />
+				<span className="text-small font-medium whitespace-nowrap">{isActive ? `Thinking ${elapsed}s` : `Thought for ${elapsed || "..."}s`}</span>
+				{isActive && <ShimmerBar />}
+				{text && <Icon icon="solar:alt-arrow-right-linear" className={cn("text-default-400 ml-auto shrink-0 transition-transform", isExpanded && "rotate-90")} />}
+			</div>
+			{isExpanded && text && (
+				<div className="border-t border-divider px-3 py-2">
+					<p className="text-tiny text-default-500 whitespace-pre-wrap max-h-[200px] overflow-auto">{text}</p>
 				</div>
-				{isExpanded && text && (
-					<div className="mt-3 pt-3 border-t border-divider">
-						<p className="text-tiny text-default-500 whitespace-pre-wrap max-h-[200px] overflow-auto">{text}</p>
-					</div>
-				)}
-			</CardBody>
+			)}
 		</Card>
 	);
 }
 
 function ShimmerBar() {
 	return (
-		<div className="relative w-10 h-1 bg-primary/30 rounded-full overflow-hidden">
+		<div className="relative w-10 h-1 bg-primary/30 rounded-full overflow-hidden shrink-0">
 			<div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary to-transparent animate-shimmer" />
 		</div>
 	);
