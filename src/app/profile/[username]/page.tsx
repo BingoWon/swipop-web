@@ -380,15 +380,18 @@ export default function ProfilePage({
 
 	React.useEffect(() => {
 		async function loadData() {
+			const startTime = performance.now();
 			const { username } = await params;
 			const supabase = createClient();
 
-			// Fetch profile
+			// Step 1: Fetch profile first (needed for user ID)
+			const t1 = performance.now();
 			const { data: profileData, error: profileError } = await supabase
 				.from("users")
 				.select("*")
 				.eq("username", username)
 				.single();
+			console.log(`📊 [Profile] 1. Fetch profile: ${(performance.now() - t1).toFixed(0)}ms`);
 
 			if (profileError || !profileData) {
 				console.error("Error fetching profile:", profileError);
@@ -398,48 +401,53 @@ export default function ProfilePage({
 
 			setProfile(profileData);
 			const isOwnProfile = user?.id === profileData.id;
+			console.log("📊 [Profile] isOwnProfile:", isOwnProfile);
 
-			// Fetch user's projects (all for own, published for others)
+			// Step 2: Fetch ALL remaining data in parallel
+			const t2 = performance.now();
+
+			// Build project query
 			let projectQuery = supabase
 				.from("projects")
 				.select("*")
 				.eq("user_id", profileData.id)
 				.order("created_at", { ascending: false });
-
 			if (!isOwnProfile) {
 				projectQuery = projectQuery.eq("is_published", true);
 			}
 
-			const { data: projectsData } = await projectQuery;
-			setProjects(projectsData || []);
-
-			// Fetch counts
-			const [followers, following] = await Promise.all([
+			// Run ALL queries in parallel
+			const [
+				projectsResult,
+				followers,
+				following,
+				likes,
+				liked,
+				collected,
+				isFollowingResult,
+			] = await Promise.all([
+				projectQuery,
 				UserService.fetchFollowerCount(profileData.id),
 				UserService.fetchFollowingCount(profileData.id),
+				InteractionService.fetchLikeCount(profileData.id),
+				isOwnProfile && user ? InteractionService.fetchLikedProjects(user.id) : Promise.resolve([]),
+				isOwnProfile && user ? InteractionService.fetchCollectedProjects(user.id) : Promise.resolve([]),
+				user && !isOwnProfile ? UserService.isFollowing(user.id, profileData.id) : Promise.resolve(false),
 			]);
+
+			console.log(`📊 [Profile] 2. Parallel fetch all: ${(performance.now() - t2).toFixed(0)}ms`);
+
+			// Apply results
+			setProjects(projectsResult.data || []);
 			setFollowerCount(followers);
 			setFollowingCount(following);
-
-			// Fetch like count
-			const likes = await InteractionService.fetchLikeCount(profileData.id);
 			setLikeCount(likes);
+			setLikedProjects(liked);
+			setCollectedProjects(collected);
+			setIsFollowing(isFollowingResult);
 
-			// For own profile, fetch liked and collected projects
-			if (isOwnProfile && user) {
-				const [liked, collected] = await Promise.all([
-					InteractionService.fetchLikedProjects(user.id),
-					InteractionService.fetchCollectedProjects(user.id),
-				]);
-				setLikedProjects(liked);
-				setCollectedProjects(collected);
-			}
-
-			// Check if following (for other profiles)
-			if (user && !isOwnProfile) {
-				const isFollowingProfile = await UserService.isFollowing(user.id, profileData.id);
-				setIsFollowing(isFollowingProfile);
-			}
+			console.log(`📊 [Profile] Projects: ${projectsResult.data?.length || 0}, Liked: ${liked.length}, Collected: ${collected.length}`);
+			console.log(`📊 [Profile] Total load time: ${(performance.now() - startTime).toFixed(0)}ms`);
 
 			setLoading(false);
 		}
