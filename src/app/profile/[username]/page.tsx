@@ -1,6 +1,20 @@
 "use client";
 
-import { Avatar, Button, Spinner, Tab, Tabs } from "@heroui/react";
+import {
+	Avatar,
+	Button,
+	Input,
+	Modal,
+	ModalBody,
+	ModalContent,
+	ModalFooter,
+	ModalHeader,
+	Spinner,
+	Tab,
+	Tabs,
+	Textarea,
+	useDisclosure,
+} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,7 +24,134 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 import { InteractionService } from "@/lib/services/interaction";
 import { UserService } from "@/lib/services/user";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile, Project } from "@/lib/types";
+import type { Profile, ProfileLink, Project } from "@/lib/types";
+
+// Edit Profile Modal (matches iOS EditProfileView)
+function EditProfileModal({
+	profile,
+	isOpen,
+	onClose,
+	onSave,
+}: {
+	profile: Profile;
+	isOpen: boolean;
+	onClose: () => void;
+	onSave: (updated: Profile) => void;
+}) {
+	const [displayName, setDisplayName] = React.useState(profile.display_name || "");
+	const [username, setUsername] = React.useState(profile.username || "");
+	const [bio, setBio] = React.useState(profile.bio || "");
+	const [links, setLinks] = React.useState<ProfileLink[]>(profile.links || []);
+	const [isSaving, setIsSaving] = React.useState(false);
+
+	const handleAddLink = () => {
+		setLinks([...links, { title: "", url: "" }]);
+	};
+
+	const handleRemoveLink = (index: number) => {
+		setLinks(links.filter((_, i) => i !== index));
+	};
+
+	const handleLinkChange = (index: number, field: "title" | "url", value: string) => {
+		const updated = [...links];
+		updated[index] = { ...updated[index], [field]: value };
+		setLinks(updated);
+	};
+
+	const handleSave = async () => {
+		setIsSaving(true);
+		try {
+			const validLinks = links.filter((l) => l.title && l.url);
+			const updated = await UserService.updateProfile(profile.id, {
+				display_name: displayName || null,
+				username: username || null,
+				bio: bio || null,
+				links: validLinks,
+			});
+			if (updated) {
+				onSave(updated);
+				onClose();
+			}
+		} finally {
+			setIsSaving(false);
+		}
+	};
+
+	return (
+		<Modal isOpen={isOpen} onClose={onClose} size="lg" scrollBehavior="inside">
+			<ModalContent>
+				<ModalHeader>Edit Profile</ModalHeader>
+				<ModalBody className="gap-4">
+					<Input
+						label="Display Name"
+						placeholder="Your name"
+						value={displayName}
+						onValueChange={setDisplayName}
+					/>
+					<Input
+						label="Username"
+						placeholder="username"
+						value={username}
+						onValueChange={setUsername}
+						startContent={<span className="text-default-400 text-sm">@</span>}
+					/>
+					<Textarea
+						label="Bio"
+						placeholder="Tell us about yourself"
+						value={bio}
+						onValueChange={setBio}
+						minRows={2}
+						maxRows={4}
+					/>
+
+					<div className="space-y-3">
+						<div className="flex items-center justify-between">
+							<span className="text-sm font-medium">Links</span>
+							<Button size="sm" variant="flat" onPress={handleAddLink} startContent={<Icon icon="solar:add-circle-bold" />}>
+								Add Link
+							</Button>
+						</div>
+						{links.map((link, i) => (
+							<div key={i} className="flex gap-2 items-start">
+								<Input
+									size="sm"
+									placeholder="Title"
+									value={link.title}
+									onValueChange={(v) => handleLinkChange(i, "title", v)}
+									className="flex-1"
+								/>
+								<Input
+									size="sm"
+									placeholder="https://..."
+									value={link.url}
+									onValueChange={(v) => handleLinkChange(i, "url", v)}
+									className="flex-[2]"
+								/>
+								<Button
+									isIconOnly
+									size="sm"
+									variant="light"
+									color="danger"
+									onPress={() => handleRemoveLink(i)}
+								>
+									<Icon icon="solar:trash-bin-trash-bold" />
+								</Button>
+							</div>
+						))}
+					</div>
+				</ModalBody>
+				<ModalFooter>
+					<Button variant="flat" onPress={onClose}>
+						Cancel
+					</Button>
+					<Button color="primary" onPress={handleSave} isLoading={isSaving}>
+						Save
+					</Button>
+				</ModalFooter>
+			</ModalContent>
+		</Modal>
+	);
+}
 
 // Profile Header (matches iOS ProfileHeaderView)
 function ProfileHeader({
@@ -23,7 +164,7 @@ function ProfileHeader({
 	onEditTapped?: () => void;
 }) {
 	return (
-		<div className="flex flex-col gap-4 px-4 pt-4">
+		<div className="flex flex-col gap-4">
 			{/* Avatar + Name + Edit row */}
 			<div className="flex items-center gap-4">
 				<Avatar
@@ -40,15 +181,8 @@ function ProfileHeader({
 					<p className="text-sm text-default-500 truncate">@{profile.username}</p>
 				</div>
 
-				{isOwnProfile && (
-					<Button
-						size="sm"
-						variant="flat"
-						className="shrink-0"
-						onPress={onEditTapped}
-						as={Link}
-						href="/settings"
-					>
+				{isOwnProfile && onEditTapped && (
+					<Button size="sm" variant="flat" className="shrink-0" onPress={onEditTapped}>
 						Edit
 					</Button>
 				)}
@@ -100,7 +234,7 @@ function ProfileStatsRow({
 	);
 
 	return (
-		<div className="flex mx-4 mt-4 bg-default-100 rounded-xl divide-x divide-default-200">
+		<div className="flex mt-4 bg-default-100 rounded-xl divide-x divide-default-200">
 			<StatItem value={projectCount} label="Projects" />
 			<StatItem value={followerCount} label="Followers" />
 			<StatItem value={followingCount} label="Following" />
@@ -122,7 +256,7 @@ function ProfileProjectCell({
 	return (
 		<Link href={`/project/${project.id}`} className="relative block group">
 			<div
-				className="relative w-full overflow-hidden rounded bg-default-200"
+				className="relative w-full overflow-hidden rounded-lg bg-default-200"
 				style={{ aspectRatio: String(aspectRatio) }}
 			>
 				{project.thumbnail_url ? (
@@ -141,7 +275,7 @@ function ProfileProjectCell({
 			</div>
 
 			{showDraftBadge && (
-				<span className="absolute top-1 right-1 px-1.5 py-0.5 text-[10px] font-semibold text-black bg-orange-400 rounded">
+				<span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 text-[10px] font-semibold text-black bg-orange-400 rounded">
 					Draft
 				</span>
 			)}
@@ -164,9 +298,9 @@ function MasonryGrid({
 	});
 
 	return (
-		<div className="grid grid-cols-3 gap-0.5 px-0.5">
+		<div className="grid grid-cols-3 gap-2 mt-4">
 			{columns.map((column, colIndex) => (
-				<div key={colIndex} className="flex flex-col gap-0.5">
+				<div key={colIndex} className="flex flex-col gap-2">
 					{column.map((project) => (
 						<ProfileProjectCell
 							key={project.id}
@@ -216,7 +350,7 @@ export default function ProfilePage({
 }: {
 	params: Promise<{ username: string }>;
 }) {
-	const { user } = useAuth();
+	const { user, refreshProfile } = useAuth();
 	const [profile, setProfile] = React.useState<Profile | null>(null);
 	const [projects, setProjects] = React.useState<Project[]>([]);
 	const [likedProjects, setLikedProjects] = React.useState<Project[]>([]);
@@ -227,6 +361,8 @@ export default function ProfilePage({
 	const [followingCount, setFollowingCount] = React.useState(0);
 	const [likeCount, setLikeCount] = React.useState(0);
 	const [selectedTab, setSelectedTab] = React.useState("projects");
+
+	const editModal = useDisclosure();
 
 	React.useEffect(() => {
 		async function loadData() {
@@ -304,10 +440,15 @@ export default function ProfilePage({
 		setFollowerCount(newIsFollowing ? followerCount + 1 : followerCount - 1);
 	};
 
+	const handleProfileUpdate = (updated: Profile) => {
+		setProfile(updated);
+		refreshProfile(); // Update global auth context
+	};
+
 	if (loading) {
 		return (
 			<SidebarLayout>
-				<div className="flex items-center justify-center min-h-screen">
+				<div className="flex items-center justify-center min-h-[60vh]">
 					<Spinner size="lg" />
 				</div>
 			</SidebarLayout>
@@ -317,7 +458,7 @@ export default function ProfilePage({
 	if (!profile) {
 		return (
 			<SidebarLayout>
-				<div className="flex items-center justify-center min-h-screen">
+				<div className="flex items-center justify-center min-h-[60vh]">
 					<p className="text-default-500">User not found</p>
 				</div>
 			</SidebarLayout>
@@ -353,72 +494,69 @@ export default function ProfilePage({
 	};
 
 	return (
-		<SidebarLayout noPadding>
-			<div className="min-h-screen">
-				{/* Header */}
-				<div className="flex items-center justify-between px-4 py-2">
-					<span />
-					{!isOwnProfile && user && (
-						<FollowButton isFollowing={isFollowing} onPress={handleFollow} />
-					)}
-					{isOwnProfile && (
-						<Button
-							as={Link}
-							href="/settings"
-							isIconOnly
-							variant="light"
-							size="sm"
-						>
-							<Icon icon="solar:settings-bold" className="text-xl" />
-						</Button>
-					)}
+		<SidebarLayout>
+			{/* Follow button for other profiles */}
+			{!isOwnProfile && user && (
+				<div className="flex justify-end mb-4">
+					<FollowButton isFollowing={isFollowing} onPress={handleFollow} />
 				</div>
+			)}
 
-				{/* Profile Header */}
-				<ProfileHeader
-					profile={profile}
-					isOwnProfile={isOwnProfile}
-				/>
+			{/* Profile Header */}
+			<ProfileHeader
+				profile={profile}
+				isOwnProfile={isOwnProfile}
+				onEditTapped={editModal.onOpen}
+			/>
 
-				{/* Stats Row */}
-				<ProfileStatsRow
-					projectCount={projects.length}
-					followerCount={followerCount}
-					followingCount={followingCount}
-					likeCount={likeCount}
-				/>
+			{/* Stats Row */}
+			<ProfileStatsRow
+				projectCount={projects.length}
+				followerCount={followerCount}
+				followingCount={followingCount}
+				likeCount={likeCount}
+			/>
 
-				{/* Tabs (icon only, matches iOS) */}
-				<div className="mt-4">
-					<Tabs
-						selectedKey={selectedTab}
-						onSelectionChange={(key) => setSelectedTab(key as string)}
-						fullWidth
-						variant="underlined"
-						classNames={{
-							tabList: "gap-0 border-b border-divider",
-							tab: "h-12",
-							cursor: "bg-primary",
-						}}
-					>
-						<Tab
-							key="projects"
-							title={<Icon icon="solar:widget-2-bold" className="text-xl" />}
-						/>
-						<Tab
-							key="likes"
-							title={<Icon icon="solar:heart-bold" className="text-xl" />}
-						/>
-						<Tab
-							key="collected"
-							title={<Icon icon="solar:bookmark-bold" className="text-xl" />}
-						/>
-					</Tabs>
-				</div>
-
-				{/* Tab Content */}
-				<div className="pb-4">{renderTabContent()}</div>
+			{/* Tabs (icon only, matches iOS) */}
+			<div className="mt-6">
+				<Tabs
+					selectedKey={selectedTab}
+					onSelectionChange={(key) => setSelectedTab(key as string)}
+					fullWidth
+					variant="underlined"
+					classNames={{
+						tabList: "gap-0 border-b border-divider",
+						tab: "h-12",
+						cursor: "bg-primary",
+					}}
+				>
+					<Tab
+						key="projects"
+						title={<Icon icon="solar:widget-2-bold" className="text-xl" />}
+					/>
+					<Tab
+						key="likes"
+						title={<Icon icon="solar:heart-bold" className="text-xl" />}
+					/>
+					<Tab
+						key="collected"
+						title={<Icon icon="solar:bookmark-bold" className="text-xl" />}
+					/>
+				</Tabs>
 			</div>
+
+			{/* Tab Content */}
+			<div className="pb-4">{renderTabContent()}</div>
+
+			{/* Edit Profile Modal */}
+			{isOwnProfile && (
+				<EditProfileModal
+					profile={profile}
+					isOpen={editModal.isOpen}
+					onClose={editModal.onClose}
+					onSave={handleProfileUpdate}
+				/>
+			)}
 		</SidebarLayout>
 	);
 }
