@@ -247,14 +247,18 @@ function ProfileStatsRow({
 function ProfileProjectCell({
 	project,
 	showDraftBadge,
+	isOwnProfile,
 }: {
 	project: Project;
 	showDraftBadge?: boolean;
+	isOwnProfile?: boolean;
 }) {
 	const aspectRatio = project.thumbnail_aspect_ratio || 0.75;
+	// Own profile → edit, other profile → view details (matches iOS editProject behavior)
+	const href = isOwnProfile ? `/create/${project.id}` : `/project/${project.id}`;
 
 	return (
-		<Link href={`/project/${project.id}`} className="relative block group">
+		<Link href={href} className="relative block group">
 			<div
 				className="relative w-full overflow-hidden rounded-lg bg-default-200"
 				style={{ aspectRatio: String(aspectRatio) }}
@@ -287,10 +291,12 @@ function ProfileProjectCell({
 function MasonryGrid({
 	projects,
 	showDraftBadges,
+	isOwnProfile,
 	minColumnWidth = 250,
 }: {
 	projects: Project[];
 	showDraftBadges?: boolean;
+	isOwnProfile?: boolean;
 	minColumnWidth?: number;
 }) {
 	return (
@@ -307,6 +313,7 @@ function MasonryGrid({
 					key={project.id}
 					project={project}
 					showDraftBadge={showDraftBadges && !project.is_published}
+					isOwnProfile={isOwnProfile}
 				/>
 			))}
 		</div>
@@ -471,19 +478,19 @@ export default function ProfilePage({
 		switch (selectedTab) {
 			case "projects":
 				return projects.length > 0 ? (
-					<MasonryGrid projects={projects} showDraftBadges={isOwnProfile} />
+					<MasonryGrid projects={projects} showDraftBadges={isOwnProfile} isOwnProfile={isOwnProfile} />
 				) : (
 					<EmptyState icon="solar:code-bold" message="No projects created yet" />
 				);
 			case "likes":
 				return likedProjects.length > 0 ? (
-					<MasonryGrid projects={likedProjects} />
+					<MasonryGrid projects={likedProjects} isOwnProfile={isOwnProfile} />
 				) : (
 					<EmptyState icon="solar:heart-bold" message="No liked projects yet" />
 				);
 			case "collected":
 				return collectedProjects.length > 0 ? (
-					<MasonryGrid projects={collectedProjects} />
+					<MasonryGrid projects={collectedProjects} isOwnProfile={isOwnProfile} />
 				) : (
 					<EmptyState icon="solar:bookmark-bold" message="No saved projects yet" />
 				);
