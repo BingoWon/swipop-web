@@ -2,8 +2,10 @@
 
 import { Button, Card, CardBody, Chip, Input, Progress, Radio, RadioGroup, Switch, Textarea } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { useState } from "react";
+import Image from "next/image";
+import { useRef, useState } from "react";
 import { useProjectEditor, AI_MODELS, type AIModel } from "@/app/create/layout";
+import { ASPECT_RATIOS, type ThumbnailAspectRatio } from "@/lib/services/thumbnail";
 
 const CONTEXT_LIMIT = 128_000;
 const BUFFER_SIZE = 30_000;
@@ -11,7 +13,7 @@ const USABLE_LIMIT = CONTEXT_LIMIT - BUFFER_SIZE;
 
 /**
  * Options panel - matches iOS ProjectOptionsSheet
- * Now includes AI Model selection
+ * Includes Thumbnail, AI Model, Details, Tags, Visibility, Context
  */
 export function OptionsPanel() {
     const {
@@ -22,10 +24,15 @@ export function OptionsPanel() {
         selectedModel, setSelectedModel,
         promptTokens,
         reset,
+        // Thumbnail
+        thumbnailBlob, thumbnailUrl, thumbnailAspectRatio, isCapturingThumbnail,
+        captureThumbnail, setThumbnailFromFile, removeThumbnail,
     } = useProjectEditor();
 
     const [tagInput, setTagInput] = useState("");
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [selectedAspect, setSelectedAspect] = useState<ThumbnailAspectRatio>("portrait");
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const addTag = () => {
         const tag = tagInput.trim().toLowerCase();
@@ -39,8 +46,109 @@ export function OptionsPanel() {
 
     const usagePercentage = USABLE_LIMIT > 0 ? promptTokens / USABLE_LIMIT : 0;
 
+    // Thumbnail preview URL (local blob or remote)
+    const thumbnailPreviewUrl = thumbnailBlob ? URL.createObjectURL(thumbnailBlob) : thumbnailUrl;
+    const hasThumbnail = !!thumbnailPreviewUrl;
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setThumbnailFromFile(file, selectedAspect);
+        }
+        e.target.value = ""; // Reset for re-upload
+    };
+
     return (
         <div className="h-full overflow-auto p-4 space-y-6">
+            {/* Thumbnail Section */}
+            <Section title="Thumbnail" icon="solar:gallery-bold">
+                <div className="space-y-4">
+                    {/* Preview */}
+                    <div className="flex justify-center">
+                        <div
+                            className="relative bg-content2 rounded-xl overflow-hidden flex items-center justify-center"
+                            style={{
+                                width: 180,
+                                height: 180 / (thumbnailAspectRatio || ASPECT_RATIOS[selectedAspect].ratio),
+                            }}
+                        >
+                            {thumbnailPreviewUrl ? (
+                                <Image
+                                    src={thumbnailPreviewUrl}
+                                    alt="Thumbnail preview"
+                                    fill
+                                    className="object-cover"
+                                    unoptimized={!!thumbnailBlob}
+                                />
+                            ) : (
+                                <Icon icon="solar:camera-bold" className="text-4xl text-default-300" />
+                            )}
+                            {isCapturingThumbnail && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                    <Icon icon="solar:refresh-bold" className="text-2xl text-white animate-spin" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Aspect Ratio Selector */}
+                    <div className="flex justify-center gap-2">
+                        {(Object.keys(ASPECT_RATIOS) as ThumbnailAspectRatio[]).map((key) => (
+                            <Button
+                                key={key}
+                                size="sm"
+                                variant={selectedAspect === key ? "solid" : "flat"}
+                                color={selectedAspect === key ? "primary" : "default"}
+                                onPress={() => setSelectedAspect(key)}
+                                startContent={<Icon icon={ASPECT_RATIOS[key].icon} />}
+                            >
+                                {ASPECT_RATIOS[key].label}
+                            </Button>
+                        ))}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="space-y-2">
+                        <Button
+                            fullWidth
+                            variant="flat"
+                            color="primary"
+                            startContent={<Icon icon="solar:camera-bold" />}
+                            isLoading={isCapturingThumbnail}
+                            onPress={() => captureThumbnail(selectedAspect)}
+                        >
+                            Capture from Preview
+                        </Button>
+                        <Button
+                            fullWidth
+                            variant="flat"
+                            startContent={<Icon icon="solar:gallery-add-bold" />}
+                            onPress={() => fileInputRef.current?.click()}
+                        >
+                            Upload from Device
+                        </Button>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleFileChange}
+                        />
+                        {hasThumbnail && (
+                            <Button
+                                fullWidth
+                                variant="light"
+                                color="danger"
+                                startContent={<Icon icon="solar:trash-bin-trash-bold" />}
+                                onPress={removeThumbnail}
+                            >
+                                Remove Thumbnail
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            </Section>
+
             {/* AI Model Section */}
             <Section title="AI Model" icon="solar:cpu-bold">
                 <RadioGroup value={selectedModel} onValueChange={(v) => setSelectedModel(v as AIModel)}>
@@ -176,3 +284,4 @@ function formatTokens(count: number): string {
     if (count >= 1000) return `${Math.round(count / 1000)}K`;
     return String(count);
 }
+

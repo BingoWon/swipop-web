@@ -2,11 +2,13 @@
 
 import { Button, Input, Tab, Tabs } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import html2canvas from "html2canvas";
 import { createContext, type Key, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { SignInPrompt, signInPrompts } from "@/components/auth/SignInPrompt";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { PageLoading } from "@/components/ui/LoadingState";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { ThumbnailService, type ThumbnailAspectRatio } from "@/lib/services/thumbnail";
 import { createClient } from "@/lib/supabase/client";
 import type { Project } from "@/lib/types";
 
@@ -77,6 +79,15 @@ interface ProjectEditorContextType {
 	setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
 	// Chat history (for API calls)
 	historyRef: React.RefObject<HistoryEntry[]>;
+	// Thumbnail
+	thumbnailBlob: Blob | null;
+	thumbnailUrl: string | null;
+	thumbnailAspectRatio: number | null;
+	isCapturingThumbnail: boolean;
+	previewRef: React.RefObject<HTMLIFrameElement | null>;
+	captureThumbnail: (aspectRatio: ThumbnailAspectRatio) => Promise<void>;
+	setThumbnailFromFile: (file: File, aspectRatio: ThumbnailAspectRatio) => Promise<void>;
+	removeThumbnail: () => void;
 	// Actions
 	save: () => Promise<void>;
 	reset: () => void;
@@ -169,6 +180,13 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 	// Chat history ref (for API calls)
 	const historyRef = useRef<HistoryEntry[]>([{ role: "system", content: SYSTEM_PROMPT }]);
 
+	// Thumbnail
+	const [thumbnailBlob, setThumbnailBlob] = useState<Blob | null>(null);
+	const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+	const [thumbnailAspectRatio, setThumbnailAspectRatio] = useState<number | null>(null);
+	const [isCapturingThumbnail, setIsCapturingThumbnail] = useState(false);
+	const previewRef = useRef<HTMLIFrameElement | null>(null);
+
 	// Dirty-tracking setters
 	const markDirty = useCallback(() => setIsDirty(true), []);
 	const setProjectTitle = useCallback((v: string) => { setProjectTitleRaw(v); markDirty(); }, [markDirty]);
@@ -242,6 +260,11 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 			historyRef.current = [{ role: "system", content: SYSTEM_PROMPT }];
 			setMessages([]);
 		}
+
+		// Load thumbnail
+		setThumbnailUrl(project.thumbnail_url || null);
+		setThumbnailAspectRatio(project.thumbnail_aspect_ratio || null);
+		setThumbnailBlob(null);
 	}, []);
 
 	// Save to Supabase
@@ -252,8 +275,40 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 
 		try {
 			const supabase = createClient();
-			const projectData = {
-				user_id: user.id,
+
+			// Create project first if new (need ID for thumbnail upload)
+			let effectiveProjectId = projectId;
+			if (!effectiveProjectId) {
+				const { data, error } = await supabase.from("projects").insert({
+					user_id: user.id,
+					title: projectTitle || "Untitled",
+					description: description || null,
+					tags: tags.length > 0 ? tags : null,
+					html_content: htmlContent,
+					css_content: cssContent,
+					js_content: jsContent,
+					is_published: isPublished,
+					chat_messages: historyRef.current,
+				}).select("id").single();
+				if (error) throw error;
+				effectiveProjectId = data.id;
+				setProjectId(effectiveProjectId);
+			}
+
+			// Upload thumbnail if we have a new one
+			let finalThumbnailUrl = thumbnailUrl;
+			let finalAspectRatio = thumbnailAspectRatio;
+			if (thumbnailBlob && effectiveProjectId) {
+				const result = await ThumbnailService.upload(thumbnailBlob, effectiveProjectId);
+				finalThumbnailUrl = result.url;
+				finalAspectRatio = result.aspectRatio;
+				setThumbnailUrl(result.url);
+				setThumbnailAspectRatio(result.aspectRatio);
+				setThumbnailBlob(null);
+			}
+
+			// Update project with all data
+			const { error } = await supabase.from("projects").update({
 				title: projectTitle || "Untitled",
 				description: description || null,
 				tags: tags.length > 0 ? tags : null,
@@ -262,16 +317,10 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 				js_content: jsContent,
 				is_published: isPublished,
 				chat_messages: historyRef.current,
-			};
-
-			if (projectId) {
-				const { error } = await supabase.from("projects").update(projectData).eq("id", projectId);
-				if (error) throw error;
-			} else {
-				const { data, error } = await supabase.from("projects").insert(projectData).select("id").single();
-				if (error) throw error;
-				if (data) setProjectId(data.id);
-			}
+				thumbnail_url: finalThumbnailUrl,
+				thumbnail_aspect_ratio: finalAspectRatio,
+			}).eq("id", effectiveProjectId);
+			if (error) throw error;
 
 			setIsDirty(false);
 			setLastSaved(new Date());
@@ -280,7 +329,7 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 		} finally {
 			setIsSaving(false);
 		}
-	}, [user, isSaving, projectId, projectTitle, description, tags, htmlContent, cssContent, jsContent, isPublished]);
+	}, [user, isSaving, projectId, projectTitle, description, tags, htmlContent, cssContent, jsContent, isPublished, thumbnailBlob, thumbnailUrl, thumbnailAspectRatio]);
 
 	// Reset (matches iOS ProjectEditorViewModel.reset)
 	const reset = useCallback(() => {
@@ -298,7 +347,67 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 		setPromptTokens(0);
 		setMessages([]);
 		historyRef.current = [{ role: "system", content: SYSTEM_PROMPT }];
+		// Reset thumbnail
+		setThumbnailBlob(null);
+		setThumbnailUrl(null);
+		setThumbnailAspectRatio(null);
 	}, []);
+
+	// Capture thumbnail from preview iframe
+	const captureThumbnail = useCallback(async (aspectRatio: ThumbnailAspectRatio) => {
+		const iframe = previewRef.current;
+		if (!iframe?.contentDocument?.body) return;
+
+		setIsCapturingThumbnail(true);
+		try {
+			const { ASPECT_RATIOS } = await import("@/lib/services/thumbnail");
+			const canvas = await html2canvas(iframe.contentDocument.body, {
+				useCORS: true,
+				allowTaint: true,
+				backgroundColor: "#000",
+			});
+
+			// Create temp image from canvas
+			const dataUrl = canvas.toDataURL("image/png");
+			const img = await ThumbnailService.urlToImage(dataUrl);
+
+			// Crop to aspect ratio
+			const croppedCanvas = ThumbnailService.cropToRatio(img, ASPECT_RATIOS[aspectRatio].ratio);
+			const blob = await ThumbnailService.canvasToBlob(croppedCanvas);
+
+			setThumbnailBlob(blob);
+			setThumbnailAspectRatio(ASPECT_RATIOS[aspectRatio].ratio);
+			markDirty();
+		} catch (err) {
+			console.error("Failed to capture thumbnail:", err);
+		} finally {
+			setIsCapturingThumbnail(false);
+		}
+	}, [markDirty]);
+
+	// Set thumbnail from uploaded file
+	const setThumbnailFromFile = useCallback(async (file: File, aspectRatio: ThumbnailAspectRatio) => {
+		try {
+			const { ASPECT_RATIOS } = await import("@/lib/services/thumbnail");
+			const img = await ThumbnailService.fileToImage(file);
+			const croppedCanvas = ThumbnailService.cropToRatio(img, ASPECT_RATIOS[aspectRatio].ratio);
+			const blob = await ThumbnailService.canvasToBlob(croppedCanvas);
+
+			setThumbnailBlob(blob);
+			setThumbnailAspectRatio(ASPECT_RATIOS[aspectRatio].ratio);
+			markDirty();
+		} catch (err) {
+			console.error("Failed to process file:", err);
+		}
+	}, [markDirty]);
+
+	// Remove thumbnail
+	const removeThumbnail = useCallback(() => {
+		setThumbnailBlob(null);
+		setThumbnailUrl(null);
+		setThumbnailAspectRatio(null);
+		markDirty();
+	}, [markDirty]);
 
 	// Real-time auto-save with debounce (2 seconds)
 	const AUTO_SAVE_DELAY = 2000;
@@ -352,7 +461,10 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 				tags, setTags, htmlContent, setHtmlContent, cssContent, setCssContent,
 				jsContent, setJsContent, isPublished, setIsPublished, isDirty, isSaving,
 				saveError, lastSaved, selectedModel, setSelectedModel, promptTokens, setPromptTokens,
-				messages, setMessages, historyRef, save, reset, load, activeTab, setActiveTab,
+				messages, setMessages, historyRef,
+				thumbnailBlob, thumbnailUrl, thumbnailAspectRatio, isCapturingThumbnail, previewRef,
+				captureThumbnail, setThumbnailFromFile, removeThumbnail,
+				save, reset, load, activeTab, setActiveTab,
 			}}
 		>
 			<SidebarLayout noPadding>
@@ -396,7 +508,7 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 					<main className="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
 						{/* Left: Preview */}
 						<div className="flex-1 bg-black rounded-large overflow-hidden min-h-[300px] lg:min-h-0">
-							<iframe srcDoc={previewSrcDoc} sandbox="allow-scripts" className="w-full h-full border-0" title="Preview" />
+							<iframe ref={previewRef} srcDoc={previewSrcDoc} sandbox="allow-scripts allow-same-origin" className="w-full h-full border-0" title="Preview" />
 						</div>
 
 						{/* Right: Tabbed Panel */}
