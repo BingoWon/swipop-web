@@ -287,7 +287,7 @@ function ProfileProjectCell({
 function MasonryGrid({
 	projects,
 	showDraftBadges,
-	minColumnWidth = 150,
+	minColumnWidth = 250,
 }: {
 	projects: Project[];
 	showDraftBadges?: boolean;

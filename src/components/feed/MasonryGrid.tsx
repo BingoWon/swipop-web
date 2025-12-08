@@ -12,9 +12,9 @@ interface MasonryGridProps {
 /**
  * Responsive masonry grid with adaptive column count.
  * Columns are automatically calculated based on container width.
- * Each column is at least minColumnWidth (default 200px) and fills remaining space.
+ * Each column is at least minColumnWidth (default 250px) and fills remaining space.
  */
-export function MasonryGrid({ projects, gap = 8, minColumnWidth = 200 }: MasonryGridProps) {
+export function MasonryGrid({ projects, gap = 8, minColumnWidth = 250 }: MasonryGridProps) {
 	return (
 		<div
 			className="w-full"
