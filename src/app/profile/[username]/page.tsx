@@ -268,6 +268,7 @@ function ProfileProjectCell({
 						src={project.thumbnail_url}
 						alt={project.title}
 						fill
+						unoptimized
 						className="object-cover transition-transform group-hover:scale-105"
 						sizes="(max-width: 768px) 33vw, 200px"
 					/>

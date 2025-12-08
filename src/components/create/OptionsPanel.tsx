@@ -80,8 +80,8 @@ export function OptionsPanel() {
                                     src={thumbnailPreviewUrl}
                                     alt="Thumbnail preview"
                                     fill
+                                    unoptimized
                                     className="object-cover"
-                                    unoptimized={!!thumbnailBlob}
                                 />
                             ) : (
                                 <Icon icon="solar:camera-bold" className="text-4xl text-default-300" />
