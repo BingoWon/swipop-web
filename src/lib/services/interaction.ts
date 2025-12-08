@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import type { Project } from "@/lib/types";
 
 const supabase = () => createClient();
 
@@ -73,5 +74,37 @@ export const InteractionService = {
 			? await this.uncollect(projectId, userId)
 			: await this.collect(projectId, userId);
 		return !collected;
+	},
+
+	// Fetch total likes received by a user's projects
+	async fetchLikeCount(userId: string): Promise<number> {
+		const { data } = await supabase()
+			.from("projects")
+			.select("like_count")
+			.eq("user_id", userId)
+			.eq("is_published", true);
+		return data?.reduce((sum, p) => sum + (p.like_count || 0), 0) ?? 0;
+	},
+
+	// Fetch projects liked by a user
+	async fetchLikedProjects(userId: string): Promise<Project[]> {
+		const { data } = await supabase()
+			.from("likes")
+			.select("project:projects(*)")
+			.eq("user_id", userId)
+			.order("created_at", { ascending: false });
+		if (!data) return [];
+		return data.map((d) => d.project).filter(Boolean) as unknown as Project[];
+	},
+
+	// Fetch projects collected by a user
+	async fetchCollectedProjects(userId: string): Promise<Project[]> {
+		const { data } = await supabase()
+			.from("collections")
+			.select("project:projects(*)")
+			.eq("user_id", userId)
+			.order("created_at", { ascending: false });
+		if (!data) return [];
+		return data.map((d) => d.project).filter(Boolean) as unknown as Project[];
 	},
 };

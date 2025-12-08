@@ -1,25 +1,215 @@
 "use client";
 
-import {
-	Avatar,
-	Button,
-	Card,
-	CardBody,
-	CardHeader,
-	Chip,
-	Spinner,
-	Tab,
-	Tabs,
-} from "@heroui/react";
+import { Avatar, Button, Spinner, Tab, Tabs } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
-import { ProjectCard } from "@/components/project/ProjectCard";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { InteractionService } from "@/lib/services/interaction";
 import { UserService } from "@/lib/services/user";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, Project } from "@/lib/types";
+
+// Profile Header (matches iOS ProfileHeaderView)
+function ProfileHeader({
+	profile,
+	isOwnProfile,
+	onEditTapped,
+}: {
+	profile: Profile;
+	isOwnProfile: boolean;
+	onEditTapped?: () => void;
+}) {
+	return (
+		<div className="flex flex-col gap-4 px-4 pt-4">
+			{/* Avatar + Name + Edit row */}
+			<div className="flex items-center gap-4">
+				<Avatar
+					className="h-[72px] w-[72px] text-2xl shrink-0"
+					showFallback
+					name={(profile.display_name || profile.username || "U").charAt(0).toUpperCase()}
+					src={profile.avatar_url || undefined}
+				/>
+
+				<div className="flex-1 min-w-0">
+					<p className="text-xl font-bold truncate">
+						{profile.display_name || profile.username || "User"}
+					</p>
+					<p className="text-sm text-default-500 truncate">@{profile.username}</p>
+				</div>
+
+				{isOwnProfile && (
+					<Button
+						size="sm"
+						variant="flat"
+						className="shrink-0"
+						onPress={onEditTapped}
+						as={Link}
+						href="/settings"
+					>
+						Edit
+					</Button>
+				)}
+			</div>
+
+			{/* Bio */}
+			{profile.bio && (
+				<p className="text-sm text-default-600 line-clamp-3">{profile.bio}</p>
+			)}
+
+			{/* Links */}
+			{profile.links && profile.links.length > 0 && (
+				<div className="flex flex-wrap gap-2">
+					{profile.links.map((link) => (
+						<a
+							key={link.url}
+							href={link.url}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 rounded-full hover:bg-primary/20 transition-colors"
+						>
+							<Icon icon="solar:link-bold" className="text-sm" />
+							{link.title}
+						</a>
+					))}
+				</div>
+			)}
+		</div>
+	);
+}
+
+// Stats Row (matches iOS ProfileStatsRow)
+function ProfileStatsRow({
+	projectCount,
+	followerCount,
+	followingCount,
+	likeCount,
+}: {
+	projectCount: number;
+	followerCount: number;
+	followingCount: number;
+	likeCount: number;
+}) {
+	const StatItem = ({ value, label }: { value: number; label: string }) => (
+		<div className="flex-1 flex flex-col items-center py-3">
+			<span className="text-base font-bold">{value}</span>
+			<span className="text-[11px] text-default-500">{label}</span>
+		</div>
+	);
+
+	return (
+		<div className="flex mx-4 mt-4 bg-default-100 rounded-xl divide-x divide-default-200">
+			<StatItem value={projectCount} label="Projects" />
+			<StatItem value={followerCount} label="Followers" />
+			<StatItem value={followingCount} label="Following" />
+			<StatItem value={likeCount} label="Likes" />
+		</div>
+	);
+}
+
+// Profile Project Cell (matches iOS ProfileProjectCell - cover only)
+function ProfileProjectCell({
+	project,
+	showDraftBadge,
+}: {
+	project: Project;
+	showDraftBadge?: boolean;
+}) {
+	const aspectRatio = project.thumbnail_aspect_ratio || 0.75;
+
+	return (
+		<Link href={`/project/${project.id}`} className="relative block group">
+			<div
+				className="relative w-full overflow-hidden rounded bg-default-200"
+				style={{ aspectRatio: String(aspectRatio) }}
+			>
+				{project.thumbnail_url ? (
+					<Image
+						src={project.thumbnail_url}
+						alt={project.title}
+						fill
+						className="object-cover transition-transform group-hover:scale-105"
+						sizes="(max-width: 768px) 33vw, 200px"
+					/>
+				) : (
+					<div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-default-200 to-default-300">
+						<Icon icon="solar:code-bold" className="text-2xl text-default-400" />
+					</div>
+				)}
+			</div>
+
+			{showDraftBadge && (
+				<span className="absolute top-1 right-1 px-1.5 py-0.5 text-[10px] font-semibold text-black bg-orange-400 rounded">
+					Draft
+				</span>
+			)}
+		</Link>
+	);
+}
+
+// Masonry Grid (3 columns, matches iOS MasonryGrid)
+function MasonryGrid({
+	projects,
+	showDraftBadges,
+}: {
+	projects: Project[];
+	showDraftBadges?: boolean;
+}) {
+	// Distribute projects into 3 columns
+	const columns: Project[][] = [[], [], []];
+	projects.forEach((project, i) => {
+		columns[i % 3].push(project);
+	});
+
+	return (
+		<div className="grid grid-cols-3 gap-0.5 px-0.5">
+			{columns.map((column, colIndex) => (
+				<div key={colIndex} className="flex flex-col gap-0.5">
+					{column.map((project) => (
+						<ProfileProjectCell
+							key={project.id}
+							project={project}
+							showDraftBadge={showDraftBadges && !project.is_published}
+						/>
+					))}
+				</div>
+			))}
+		</div>
+	);
+}
+
+// Empty State
+function EmptyState({ icon, message }: { icon: string; message: string }) {
+	return (
+		<div className="flex flex-col items-center justify-center py-16 gap-3">
+			<Icon icon={icon} className="text-4xl text-default-300" />
+			<p className="text-sm text-default-500">{message}</p>
+		</div>
+	);
+}
+
+// Follow Button (for other profiles)
+function FollowButton({
+	isFollowing,
+	onPress,
+}: {
+	isFollowing: boolean;
+	onPress: () => void;
+}) {
+	return (
+		<Button
+			size="sm"
+			color={isFollowing ? "default" : "primary"}
+			variant={isFollowing ? "bordered" : "solid"}
+			onPress={onPress}
+			className="shrink-0"
+		>
+			{isFollowing ? "Following" : "Follow"}
+		</Button>
+	);
+}
 
 export default function ProfilePage({
 	params,
@@ -29,10 +219,14 @@ export default function ProfilePage({
 	const { user } = useAuth();
 	const [profile, setProfile] = React.useState<Profile | null>(null);
 	const [projects, setProjects] = React.useState<Project[]>([]);
+	const [likedProjects, setLikedProjects] = React.useState<Project[]>([]);
+	const [collectedProjects, setCollectedProjects] = React.useState<Project[]>([]);
 	const [loading, setLoading] = React.useState(true);
 	const [isFollowing, setIsFollowing] = React.useState(false);
 	const [followerCount, setFollowerCount] = React.useState(0);
 	const [followingCount, setFollowingCount] = React.useState(0);
+	const [likeCount, setLikeCount] = React.useState(0);
+	const [selectedTab, setSelectedTab] = React.useState("projects");
 
 	React.useEffect(() => {
 		async function loadData() {
@@ -46,37 +240,27 @@ export default function ProfilePage({
 				.eq("username", username)
 				.single();
 
-			if (profileError) {
+			if (profileError || !profileData) {
 				console.error("Error fetching profile:", profileError);
 				setLoading(false);
 				return;
 			}
 
 			setProfile(profileData);
-
-			// Fetch user's projects
-			// Show all projects for own profile, only published for others
 			const isOwnProfile = user?.id === profileData.id;
-			let query = supabase
+
+			// Fetch user's projects (all for own, published for others)
+			let projectQuery = supabase
 				.from("projects")
-				.select(`
-				*,
-				creator:users (
-					id,
-					username,
-					display_name,
-					avatar_url
-				)
-			`)
+				.select("*")
 				.eq("user_id", profileData.id)
 				.order("created_at", { ascending: false });
 
-			// Only filter by is_published when viewing someone else's profile
 			if (!isOwnProfile) {
-				query = query.eq("is_published", true);
+				projectQuery = projectQuery.eq("is_published", true);
 			}
 
-			const { data: projectsData } = await query;
+			const { data: projectsData } = await projectQuery;
 			setProjects(projectsData || []);
 
 			// Fetch counts
@@ -87,12 +271,23 @@ export default function ProfilePage({
 			setFollowerCount(followers);
 			setFollowingCount(following);
 
-			// Check if current user follows this profile
-			if (user && user.id !== profileData.id) {
-				const isFollowingProfile = await UserService.isFollowing(
-					user.id,
-					profileData.id,
-				);
+			// Fetch like count
+			const likes = await InteractionService.fetchLikeCount(profileData.id);
+			setLikeCount(likes);
+
+			// For own profile, fetch liked and collected projects
+			if (isOwnProfile && user) {
+				const [liked, collected] = await Promise.all([
+					InteractionService.fetchLikedProjects(user.id),
+					InteractionService.fetchCollectedProjects(user.id),
+				]);
+				setLikedProjects(liked);
+				setCollectedProjects(collected);
+			}
+
+			// Check if following (for other profiles)
+			if (user && !isOwnProfile) {
+				const isFollowingProfile = await UserService.isFollowing(user.id, profileData.id);
 				setIsFollowing(isFollowingProfile);
 			}
 
@@ -131,150 +326,98 @@ export default function ProfilePage({
 
 	const isOwnProfile = user?.id === profile.id;
 
+	// Tab content
+	const renderTabContent = () => {
+		switch (selectedTab) {
+			case "projects":
+				return projects.length > 0 ? (
+					<MasonryGrid projects={projects} showDraftBadges={isOwnProfile} />
+				) : (
+					<EmptyState icon="solar:code-bold" message="No projects created yet" />
+				);
+			case "likes":
+				return likedProjects.length > 0 ? (
+					<MasonryGrid projects={likedProjects} />
+				) : (
+					<EmptyState icon="solar:heart-bold" message="No liked projects yet" />
+				);
+			case "collected":
+				return collectedProjects.length > 0 ? (
+					<MasonryGrid projects={collectedProjects} />
+				) : (
+					<EmptyState icon="solar:bookmark-bold" message="No saved projects yet" />
+				);
+			default:
+				return null;
+		}
+	};
+
 	return (
-		<SidebarLayout>
-			<div className="max-w-4xl mx-auto">
-				<Card className="w-full">
-					<CardHeader className="relative flex h-[120px] flex-col justify-end overflow-visible bg-gradient-to-br from-pink-300 via-purple-300 to-indigo-400">
-						<Avatar
-							className="h-24 w-24 translate-y-12 text-large"
-							showFallback
-							name={profile.display_name || profile.username || "U"}
-							src={profile.avatar_url || undefined}
-						/>
-						{isOwnProfile && (
-							<Button
-								className="absolute top-3 right-3 bg-white/20 text-white dark:bg-black/20"
-								radius="full"
-								size="sm"
-								variant="light"
-								startContent={<Icon icon="solar:pen-bold" />}
-								as={Link}
-								href="/settings"
-							>
-								Edit Profile
-							</Button>
-						)}
-					</CardHeader>
-
-					<CardBody>
-						<div className="pt-8 pb-4">
-							<div className="flex items-start justify-between">
-								<div>
-									<p className="text-large font-medium">
-										{profile.display_name || profile.username}
-									</p>
-									<p className="text-small text-default-400">
-										@{profile.username}
-									</p>
-								</div>
-								{!isOwnProfile && user && (
-									<Button
-										color={isFollowing ? "default" : "primary"}
-										variant={isFollowing ? "bordered" : "solid"}
-										onPress={handleFollow}
-										startContent={
-											isFollowing ? (
-												<Icon icon="solar:check-circle-bold" />
-											) : (
-												<Icon icon="solar:user-plus-bold" />
-											)
-										}
-									>
-										{isFollowing ? "Following" : "Follow"}
-									</Button>
-								)}
-							</div>
-
-							{profile.bio && (
-								<p className="text-small text-foreground py-3">{profile.bio}</p>
-							)}
-
-							{profile.links && profile.links.length > 0 && (
-								<div className="flex gap-2 py-2 flex-wrap">
-									{profile.links.map((link) => (
-										<Chip
-											key={link.url}
-											variant="flat"
-											as="a"
-											href={link.url}
-											target="_blank"
-											startContent={<Icon icon="solar:link-bold" />}
-										>
-											{link.title}
-										</Chip>
-									))}
-								</div>
-							)}
-
-							<div className="flex gap-4 pt-2">
-								<p>
-									<span className="text-small text-default-500 font-medium">
-										{projects.length}
-									</span>
-									&nbsp;
-									<span className="text-small text-default-400">Projects</span>
-								</p>
-								<p>
-									<span className="text-small text-default-500 font-medium">
-										{followingCount}
-									</span>
-									&nbsp;
-									<span className="text-small text-default-400">Following</span>
-								</p>
-								<p>
-									<span className="text-small text-default-500 font-medium">
-										{followerCount}
-									</span>
-									&nbsp;
-									<span className="text-small text-default-400">Followers</span>
-								</p>
-							</div>
-						</div>
-
-						<Tabs
-							fullWidth
-							classNames={{
-								panel: "mt-4",
-							}}
+		<SidebarLayout noPadding>
+			<div className="min-h-screen">
+				{/* Header */}
+				<div className="flex items-center justify-between px-4 py-2">
+					<span />
+					{!isOwnProfile && user && (
+						<FollowButton isFollowing={isFollowing} onPress={handleFollow} />
+					)}
+					{isOwnProfile && (
+						<Button
+							as={Link}
+							href="/settings"
+							isIconOnly
+							variant="light"
+							size="sm"
 						>
-							<Tab
-								key="projects"
-								title={
-									<div className="flex items-center gap-2">
-										<Icon icon="solar:code-bold" />
-										<span>Projects</span>
-									</div>
-								}
-							>
-								{projects.length > 0 ? (
-									<div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-										{projects.map((project) => (
-											<ProjectCard key={project.id} project={project} />
-										))}
-									</div>
-								) : (
-									<div className="text-center py-8 text-default-400">
-										<p>No projects yet</p>
-									</div>
-								)}
-							</Tab>
-							<Tab
-								key="likes"
-								title={
-									<div className="flex items-center gap-2">
-										<Icon icon="solar:heart-bold" />
-										<span>Likes</span>
-									</div>
-								}
-							>
-								<div className="text-center py-8 text-default-400">
-									<p>No liked projects</p>
-								</div>
-							</Tab>
-						</Tabs>
-					</CardBody>
-				</Card>
+							<Icon icon="solar:settings-bold" className="text-xl" />
+						</Button>
+					)}
+				</div>
+
+				{/* Profile Header */}
+				<ProfileHeader
+					profile={profile}
+					isOwnProfile={isOwnProfile}
+				/>
+
+				{/* Stats Row */}
+				<ProfileStatsRow
+					projectCount={projects.length}
+					followerCount={followerCount}
+					followingCount={followingCount}
+					likeCount={likeCount}
+				/>
+
+				{/* Tabs (icon only, matches iOS) */}
+				<div className="mt-4">
+					<Tabs
+						selectedKey={selectedTab}
+						onSelectionChange={(key) => setSelectedTab(key as string)}
+						fullWidth
+						variant="underlined"
+						classNames={{
+							tabList: "gap-0 border-b border-divider",
+							tab: "h-12",
+							cursor: "bg-primary",
+						}}
+					>
+						<Tab
+							key="projects"
+							title={<Icon icon="solar:widget-2-bold" className="text-xl" />}
+						/>
+						<Tab
+							key="likes"
+							title={<Icon icon="solar:heart-bold" className="text-xl" />}
+						/>
+						<Tab
+							key="collected"
+							title={<Icon icon="solar:bookmark-bold" className="text-xl" />}
+						/>
+					</Tabs>
+				</div>
+
+				{/* Tab Content */}
+				<div className="pb-4">{renderTabContent()}</div>
 			</div>
 		</SidebarLayout>
 	);
