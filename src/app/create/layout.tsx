@@ -300,70 +300,32 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 		historyRef.current = [{ role: "system", content: SYSTEM_PROMPT }];
 	}, []);
 
-	// Refs for auto-save (to access latest state in event handlers)
-	const stateRef = useRef({ user, hasContent, isDirty, isSaving, projectId, projectTitle, description, tags, htmlContent, cssContent, jsContent, isPublished, historyRef });
-	stateRef.current = { user, hasContent, isDirty, isSaving, projectId, projectTitle, description, tags, htmlContent, cssContent, jsContent, isPublished, historyRef };
+	// Real-time auto-save with debounce (2 seconds)
+	const AUTO_SAVE_DELAY = 2000;
 
-	// Auto-save on page unload (matches iOS saveAndReset on closeCreate)
 	useEffect(() => {
-		const autoSave = async () => {
-			const s = stateRef.current;
-			if (!s.user || !s.hasContent || !s.isDirty || s.isSaving) return;
+		// Skip if not ready to save
+		if (!user || !hasContent || !isDirty || isSaving) return;
 
-			try {
-				const supabase = createClient();
-				const projectData = {
-					user_id: s.user.id,
-					title: s.projectTitle || "Untitled",
-					description: s.description || null,
-					tags: s.tags.length > 0 ? s.tags : null,
-					html_content: s.htmlContent,
-					css_content: s.cssContent,
-					js_content: s.jsContent,
-					is_published: s.isPublished,
-					chat_messages: s.historyRef.current,
-				};
+		const timer = setTimeout(() => {
+			save();
+		}, AUTO_SAVE_DELAY);
 
-				if (s.projectId) {
-					await supabase.from("projects").update(projectData).eq("id", s.projectId);
-				} else {
-					await supabase.from("projects").insert(projectData);
-				}
-			} catch {
-				// Best effort - don't block unload
-			}
-		};
+		return () => clearTimeout(timer);
+	}, [user, hasContent, isDirty, isSaving, save]);
 
+	// Safety: warn before unload if still dirty
+	useEffect(() => {
 		const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-			const s = stateRef.current;
-			if (s.hasContent && s.isDirty) {
-				// Trigger save synchronously via sendBeacon would be ideal but Supabase doesn't support it
-				// Show browser's native prompt instead
+			if (hasContent && isDirty) {
 				e.preventDefault();
 				e.returnValue = "";
 			}
 		};
 
-		const handleVisibilityChange = () => {
-			if (document.visibilityState === "hidden") {
-				autoSave();
-			}
-		};
-
-		const handlePageHide = () => {
-			autoSave();
-		};
-
 		window.addEventListener("beforeunload", handleBeforeUnload);
-		document.addEventListener("visibilitychange", handleVisibilityChange);
-		window.addEventListener("pagehide", handlePageHide);
-
-		return () => {
-			window.removeEventListener("beforeunload", handleBeforeUnload);
-			document.removeEventListener("visibilitychange", handleVisibilityChange);
-			window.removeEventListener("pagehide", handlePageHide);
-		};
-	}, []);
+		return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+	}, [hasContent, isDirty]);
 
 	if (loading) return <PageLoading />;
 	if (!user) return <SidebarLayout><SignInPrompt {...signInPrompts.create} /></SidebarLayout>;
