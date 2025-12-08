@@ -64,7 +64,6 @@ export function OptionsPanel() {
         e.target.value = ""; // Reset for re-upload
     };
 
-
     return (
         <div className="h-full overflow-auto p-4 space-y-6">
             {/* Thumbnail Section */}
