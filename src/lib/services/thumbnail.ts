@@ -2,6 +2,9 @@ import { createClient } from "@/lib/supabase/client";
 
 const BUCKET = "thumbnails";
 
+/** Max file size: 5MB (industry standard: Twitter/X, Instagram, Imgur) */
+export const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
 /** Thumbnail aspect ratio presets matching iOS */
 export type ThumbnailAspectRatio = "portrait" | "square" | "landscape";
 

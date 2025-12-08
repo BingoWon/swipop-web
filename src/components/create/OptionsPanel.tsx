@@ -4,7 +4,7 @@ import { Button, Card, CardBody, Chip, Input, Progress, Radio, RadioGroup, Switc
 import { Icon } from "@iconify/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useProjectEditor, AI_MODELS, type AIModel } from "@/app/create/layout";
-import { ASPECT_RATIOS, type ThumbnailAspectRatio } from "@/lib/services/thumbnail";
+import { ASPECT_RATIOS, MAX_FILE_SIZE, type ThumbnailAspectRatio } from "@/lib/services/thumbnail";
 
 const CONTEXT_LIMIT = 128_000;
 const BUFFER_SIZE = 30_000;
@@ -54,6 +54,11 @@ export function OptionsPanel() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            if (file.size > MAX_FILE_SIZE) {
+                alert(`File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB.`);
+                e.target.value = "";
+                return;
+            }
             setThumbnailFromFile(file, selectedAspect);
         }
         e.target.value = ""; // Reset for re-upload

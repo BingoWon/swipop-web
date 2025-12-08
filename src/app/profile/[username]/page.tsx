@@ -378,18 +378,15 @@ export default function ProfilePage({
 
 	React.useEffect(() => {
 		async function loadData() {
-			const startTime = performance.now();
 			const { username } = await params;
 			const supabase = createClient();
 
 			// Step 1: Fetch profile first (needed for user ID)
-			const t1 = performance.now();
 			const { data: profileData, error: profileError } = await supabase
 				.from("users")
 				.select("*")
 				.eq("username", username)
 				.single();
-			console.log(`📊 [Profile] 1. Fetch profile: ${(performance.now() - t1).toFixed(0)}ms`);
 
 			if (profileError || !profileData) {
 				console.error("Error fetching profile:", profileError);
@@ -399,11 +396,8 @@ export default function ProfilePage({
 
 			setProfile(profileData);
 			const isOwnProfile = user?.id === profileData.id;
-			console.log("📊 [Profile] isOwnProfile:", isOwnProfile);
 
 			// Step 2: Fetch ALL remaining data in parallel
-			const t2 = performance.now();
-
 			// Build project query
 			let projectQuery = supabase
 				.from("projects")
@@ -433,8 +427,6 @@ export default function ProfilePage({
 				user && !isOwnProfile ? UserService.isFollowing(user.id, profileData.id) : Promise.resolve(false),
 			]);
 
-			console.log(`📊 [Profile] 2. Parallel fetch all: ${(performance.now() - t2).toFixed(0)}ms`);
-
 			// Apply results
 			setProjects(projectsResult.data || []);
 			setFollowerCount(followers);
@@ -443,9 +435,6 @@ export default function ProfilePage({
 			setLikedProjects(liked);
 			setCollectedProjects(collected);
 			setIsFollowing(isFollowingResult);
-
-			console.log(`📊 [Profile] Projects: ${projectsResult.data?.length || 0}, Liked: ${liked.length}, Collected: ${collected.length}`);
-			console.log(`📊 [Profile] Total load time: ${(performance.now() - startTime).toFixed(0)}ms`);
 
 			setLoading(false);
 		}
