@@ -3,8 +3,8 @@
 import { Button, ScrollShadow, Textarea, Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MessageCard, TypingIndicator, type Message, type Segment } from "@/components/ai/MessageCard";
-import { useProjectEditor, AI_MODELS, type HistoryEntry } from "@/app/create/layout";
+import { MessageCard, TypingIndicator } from "@/components/ai/MessageCard";
+import { useProjectEditor, AI_MODELS, type HistoryEntry, type Message, type Segment } from "@/app/create/layout";
 import { streamChat, type StreamEvent } from "@/lib/ai/service";
 
 const IDEA_SUGGESTIONS = [
@@ -17,17 +17,18 @@ const IDEA_SUGGESTIONS = [
 /**
  * ChatPanel - Complete implementation matching iOS ChatViewModel
  * Supports multi-turn tool calls, model selection, and history management
+ * Messages state lifted to Context so chat persists across tab switches
  */
 export function ChatPanel() {
     const {
         projectTitle, description, tags, htmlContent, cssContent, jsContent,
         setHtmlContent, setCssContent, setJsContent, setProjectTitle, setDescription, setTags,
         selectedModel, historyRef, syncHistoryToEditor, setPromptTokens,
+        messages, setMessages,
     } = useProjectEditor();
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const [input, setInput] = useState("");
-    const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const abortRef = useRef<AbortController | null>(null);

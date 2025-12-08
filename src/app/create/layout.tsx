@@ -26,6 +26,20 @@ export interface HistoryEntry {
 	tool_call_id?: string;
 }
 
+// Message types for UI display (matches iOS ChatMessage)
+export type Segment =
+	| { type: "text"; content: string }
+	| { type: "thinking"; content: string; isActive: boolean; duration?: number }
+	| { type: "tool_call"; id: string; name: string; arguments: string; result?: string; isStreaming: boolean };
+
+export interface Message {
+	id: string;
+	role: "user" | "assistant" | "system";
+	content: string;
+	segments: Segment[];
+	isStreaming?: boolean;
+}
+
 // Extended context matching iOS
 interface ProjectEditorContextType {
 	// Identity
@@ -54,6 +68,9 @@ interface ProjectEditorContextType {
 	// Token stats
 	promptTokens: number;
 	setPromptTokens: (tokens: number) => void;
+	// Chat messages (UI display - persists across tab switches)
+	messages: Message[];
+	setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
 	// Chat history (for API calls)
 	historyRef: React.RefObject<HistoryEntry[]>;
 	syncHistoryToEditor: () => void;
@@ -139,6 +156,9 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 	const [selectedModel, setSelectedModel] = useState<AIModel>("deepseek-chat");
 	const [promptTokens, setPromptTokens] = useState(0);
 	const [activeTab, setActiveTab] = useState("chat");
+
+	// Chat messages for UI display (persists across tab switches)
+	const [messages, setMessages] = useState<Message[]>([]);
 
 	// Chat history ref (matches iOS ChatViewModel.history)
 	const historyRef = useRef<HistoryEntry[]>([{ role: "system", content: SYSTEM_PROMPT }]);
@@ -230,7 +250,7 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 				tags, setTags, htmlContent, setHtmlContent, cssContent, setCssContent,
 				jsContent, setJsContent, isPublished, setIsPublished, isDirty, isSaving,
 				selectedModel, setSelectedModel, promptTokens, setPromptTokens,
-				historyRef, syncHistoryToEditor, save, reset, activeTab, setActiveTab,
+				messages, setMessages, historyRef, syncHistoryToEditor, save, reset, activeTab, setActiveTab,
 			}}
 		>
 			<SidebarLayout noPadding>

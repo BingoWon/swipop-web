@@ -3,6 +3,7 @@
 import { Avatar, Card, CardBody, Chip, cn, Progress } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useState, useEffect } from "react";
+import { type Message, type Segment } from "@/app/create/layout";
 
 // Constants
 const AI_AVATAR_URL = "https://nextuipro.nyc3.cdn.digitaloceanspaces.com/components-images/avatar_ai.png";
@@ -18,19 +19,8 @@ const TOOL_CONFIG: Record<string, { icon: string; label: string }> = {
 	summarize_conversation: { icon: "solar:document-text-bold", label: "Summary" },
 };
 
-// Types matching ChatPanel Message structure
-type Segment =
-	| { type: "text"; content: string }
-	| { type: "thinking"; content: string; isActive: boolean; duration?: number }
-	| { type: "tool_call"; id: string; name: string; arguments: string; result?: string; isStreaming: boolean };
-
-interface Message {
-	id: string;
-	role: "user" | "assistant" | "system";
-	content: string;
-	segments: Segment[];
-	isStreaming?: boolean;
-}
+// Re-export types from layout for convenience
+export type { Message, Segment };
 
 interface MessageCardProps {
 	message: Message;
@@ -183,6 +173,3 @@ export function TypingIndicator() {
 		</div>
 	);
 }
-
-// Export types for ChatPanel
-export type { Message, Segment };
