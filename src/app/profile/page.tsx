@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { SignInPrompt, signInPrompts } from "@/components/auth/SignInPrompt";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
+import { PageLoading } from "@/components/ui/LoadingState";
 import { useAuth } from "@/lib/contexts/AuthContext";
 
 /**
@@ -14,13 +15,7 @@ export default function ProfilePage() {
 
     // Show loading state while auth or profile is loading
     if (loading || (user && !profile)) {
-        return (
-            <SidebarLayout>
-                <div className="flex items-center justify-center h-full">
-                    <div className="animate-pulse text-default-400">Loading...</div>
-                </div>
-            </SidebarLayout>
-        );
+        return <PageLoading />;
     }
 
     // Show sign-in prompt for unauthenticated users

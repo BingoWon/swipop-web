@@ -18,6 +18,7 @@ import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import React from "react";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
+import { PageLoading } from "@/components/ui/LoadingState";
 import { useAuth } from "@/lib/contexts/AuthContext";
 
 /**
@@ -32,13 +33,7 @@ export default function SettingsPage() {
 
     // Show loading state
     if (loading) {
-        return (
-            <SidebarLayout>
-                <div className="flex items-center justify-center h-full">
-                    <div className="animate-pulse text-default-400">Loading...</div>
-                </div>
-            </SidebarLayout>
-        );
+        return <PageLoading />;
     }
 
     // Redirect to login if not authenticated

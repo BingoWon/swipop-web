@@ -16,6 +16,7 @@ import Link from "next/link";
 import React from "react";
 import { SignInPrompt, signInPrompts } from "@/components/auth/SignInPrompt";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
+import { PageLoading } from "@/components/ui/LoadingState";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { ActivityService } from "@/lib/services/activity";
 import { createClient } from "@/lib/supabase/client";
@@ -63,12 +64,12 @@ export default function InboxPage() {
 	const [activities, setActivities] = React.useState<
 		(Activity & { actor?: Profile; project?: Project })[]
 	>([]);
-	const [loading, setLoading] = React.useState(true);
+	const [isLoading, setIsLoading] = React.useState(true);
 
 	React.useEffect(() => {
 		async function fetchActivities() {
 			if (!user) {
-				setLoading(false);
+				setIsLoading(false);
 				return;
 			}
 
@@ -98,7 +99,7 @@ export default function InboxPage() {
 				setActivities(data || []);
 			}
 
-			setLoading(false);
+			setIsLoading(false);
 		}
 
 		fetchActivities();
@@ -123,13 +124,7 @@ export default function InboxPage() {
 
 	// Show loading state while auth is initializing
 	if (authLoading) {
-		return (
-			<SidebarLayout>
-				<div className="flex items-center justify-center h-full">
-					<div className="animate-pulse text-default-400">Loading...</div>
-				</div>
-			</SidebarLayout>
-		);
+		return <PageLoading />;
 	}
 
 	if (!user) {
@@ -195,7 +190,7 @@ export default function InboxPage() {
 					{/* Activities List */}
 					<Card>
 						<CardBody className="p-0">
-							{loading ? (
+							{isLoading ? (
 								<div className="flex items-center justify-center py-12">
 									<Spinner size="lg" />
 								</div>
