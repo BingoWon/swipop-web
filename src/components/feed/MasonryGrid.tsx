@@ -10,22 +10,29 @@ interface MasonryGridProps {
 }
 
 /**
- * Responsive masonry grid with adaptive column count.
- * Columns are automatically calculated based on container width.
- * Each column is at least minColumnWidth (default 250px) and fills remaining space.
+ * True masonry grid using CSS multi-column layout.
+ * Items with varying heights fill columns like bricks.
+ * Column width is adaptive based on minColumnWidth (default 250px).
  */
 export function MasonryGrid({ projects, gap = 8, minColumnWidth = 250 }: MasonryGridProps) {
 	return (
 		<div
 			className="w-full"
 			style={{
-				display: "grid",
-				gridTemplateColumns: `repeat(auto-fill, minmax(${minColumnWidth}px, 1fr))`,
-				gap: `${gap}px`,
+				columnWidth: `${minColumnWidth}px`,
+				columnGap: `${gap}px`,
 			}}
 		>
 			{projects.map((project) => (
-				<ProjectCard key={project.id} project={project} />
+				<div
+					key={project.id}
+					style={{
+						breakInside: "avoid",
+						marginBottom: `${gap}px`,
+					}}
+				>
+					<ProjectCard project={project} />
+				</div>
 			))}
 		</div>
 	);

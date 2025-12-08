@@ -287,34 +287,42 @@ function ProfileProjectCell({
 	);
 }
 
-// Masonry Grid (adaptive columns, auto-calculated based on container width)
+// True Masonry Grid using CSS multi-column layout for varying height items
 function MasonryGrid({
 	projects,
 	showDraftBadges,
 	isOwnProfile,
 	minColumnWidth = 250,
+	gap = 8,
 }: {
 	projects: Project[];
 	showDraftBadges?: boolean;
 	isOwnProfile?: boolean;
 	minColumnWidth?: number;
+	gap?: number;
 }) {
 	return (
 		<div
 			className="mt-4"
 			style={{
-				display: "grid",
-				gridTemplateColumns: `repeat(auto-fill, minmax(${minColumnWidth}px, 1fr))`,
-				gap: "8px",
+				columnWidth: `${minColumnWidth}px`,
+				columnGap: `${gap}px`,
 			}}
 		>
 			{projects.map((project) => (
-				<ProfileProjectCell
+				<div
 					key={project.id}
-					project={project}
-					showDraftBadge={showDraftBadges && !project.is_published}
-					isOwnProfile={isOwnProfile}
-				/>
+					style={{
+						breakInside: "avoid",
+						marginBottom: `${gap}px`,
+					}}
+				>
+					<ProfileProjectCell
+						project={project}
+						showDraftBadge={showDraftBadges && !project.is_published}
+						isOwnProfile={isOwnProfile}
+					/>
+				</div>
 			))}
 		</div>
 	);
