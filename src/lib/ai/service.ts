@@ -81,11 +81,12 @@ export type StreamEvent =
     | { type: "error"; message: string }
     | { type: "done" };
 
-export type AIModel = "deepseek-chat" | "deepseek-reasoner";
+// Import AIModel from layout to avoid duplication
+import type { AIModel } from "@/app/create/layout";
 
 export interface StreamChatOptions {
     messages: Array<{ role: string; content: string }>;
-    model?: AIModel;
+    model: AIModel;
     onEvent: (event: StreamEvent) => void;
     signal?: AbortSignal;
 }
@@ -94,7 +95,7 @@ export interface StreamChatOptions {
  * Stream chat with AI via Supabase Edge Function
  * Mirrors iOS AIService.streamChat()
  */
-export async function streamChat({ messages, model = "deepseek-reasoner", onEvent, signal }: StreamChatOptions): Promise<void> {
+export async function streamChat({ messages, model, onEvent, signal }: StreamChatOptions): Promise<void> {
     const supabase = createClient();
 
     // Get current session

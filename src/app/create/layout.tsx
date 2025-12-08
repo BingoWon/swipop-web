@@ -8,6 +8,7 @@ import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { PageLoading } from "@/components/ui/LoadingState";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { createClient } from "@/lib/supabase/client";
+import type { Project } from "@/lib/types";
 
 // AI Model types matching iOS
 export type AIModel = "deepseek-chat" | "deepseek-reasoner";
@@ -38,20 +39,6 @@ export interface Message {
 	content: string;
 	segments: Segment[];
 	isStreaming?: boolean;
-}
-
-// Project type for loading (matches Supabase schema)
-export interface Project {
-	id: string;
-	title: string;
-	description?: string | null;
-	tags?: string[] | null;
-	html_content?: string | null;
-	css_content?: string | null;
-	js_content?: string | null;
-	is_published: boolean;
-	chat_messages?: HistoryEntry[] | null;
-	thumbnail_url?: string | null;
 }
 
 // Context interface matching iOS ProjectEditorViewModel + ChatViewModel
@@ -205,14 +192,15 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 		setIsDirty(false);
 		setSaveError(null);
 
-		// Load chat history
-		if (project.chat_messages && project.chat_messages.length > 0) {
-			historyRef.current = project.chat_messages;
+		// Load chat history (cast from generic type)
+		const chatHistory = project.chat_messages as HistoryEntry[] | null;
+		if (chatHistory && chatHistory.length > 0) {
+			historyRef.current = chatHistory;
 			// Reconstruct UI messages from history (matches iOS loadFromProjectEditor)
 			const uiMessages: Message[] = [];
 			let currentAssistantMsg: Message | null = null;
 
-			for (const entry of project.chat_messages) {
+			for (const entry of chatHistory) {
 				if (entry.role === "system") continue;
 
 				if (entry.role === "user" && entry.content) {

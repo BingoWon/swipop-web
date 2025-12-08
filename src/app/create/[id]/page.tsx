@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@heroui/react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useProjectEditor } from "@/app/create/layout";
@@ -7,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { PageLoading } from "@/components/ui/LoadingState";
 import CreatePage from "@/app/create/page";
+import type { Project } from "@/lib/types";
 
 /**
  * Edit existing project page
@@ -40,7 +43,7 @@ export default function EditProjectPage() {
                 const supabase = createClient();
                 const { data, error: fetchError } = await supabase
                     .from("projects")
-                    .select("id, title, description, tags, html_content, css_content, js_content, is_published, chat_messages, user_id")
+                    .select("*")
                     .eq("id", id)
                     .single();
 
@@ -51,7 +54,7 @@ export default function EditProjectPage() {
                     return;
                 }
 
-                load(data);
+                load(data as Project);
                 setLoading(false);
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Failed to load project");
@@ -68,9 +71,9 @@ export default function EditProjectPage() {
         return (
             <div className="flex flex-col items-center justify-center h-full gap-4">
                 <p className="text-danger">{error}</p>
-                <button onClick={() => router.push("/create")} className="text-primary underline">
+                <Button as={Link} href="/create" variant="light" color="primary">
                     Create new project instead
-                </button>
+                </Button>
             </div>
         );
     }
