@@ -16,7 +16,7 @@ import {
 	useDisclosure,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import Image from "next/image";
+
 import Link from "next/link";
 import React from "react";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
@@ -264,13 +264,10 @@ function ProfileProjectCell({
 				style={{ aspectRatio: String(aspectRatio) }}
 			>
 				{project.thumbnail_url ? (
-					<Image
+					<img
 						src={project.thumbnail_url}
 						alt={project.title}
-						fill
-						unoptimized
-						className="object-cover transition-transform group-hover:scale-105"
-						sizes="(max-width: 768px) 33vw, 200px"
+						className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
 					/>
 				) : (
 					<div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-default-200 to-default-300">

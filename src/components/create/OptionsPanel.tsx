@@ -2,7 +2,6 @@
 
 import { Button, Card, CardBody, Chip, Input, Progress, Radio, RadioGroup, Switch, Textarea } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useProjectEditor, AI_MODELS, type AIModel } from "@/app/create/layout";
 import { ASPECT_RATIOS, type ThumbnailAspectRatio } from "@/lib/services/thumbnail";
@@ -76,12 +75,10 @@ export function OptionsPanel() {
                             }}
                         >
                             {thumbnailPreviewUrl ? (
-                                <Image
+                                <img
                                     src={thumbnailPreviewUrl}
                                     alt="Thumbnail preview"
-                                    fill
-                                    unoptimized
-                                    className="object-cover"
+                                    className="absolute inset-0 w-full h-full object-cover"
                                 />
                             ) : (
                                 <Icon icon="solar:camera-bold" className="text-4xl text-default-300" />
