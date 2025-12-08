@@ -37,6 +37,8 @@ export function ChatPanel() {
     const currentMsgIndexRef = useRef(0);
     const accumulatedReasoningRef = useRef("");
     const toolCallsRef = useRef<Record<number, { id: string; name: string; args: string; segmentIndex: number }>>({});
+    // Track current round's text segment index (-1 means need to create new)
+    const currentTextSegmentRef = useRef(-1);
 
     // Check if model supports thinking
     const supportsThinking = AI_MODELS[selectedModel === "deepseek-reasoner" ? "reasoner" : "chat"].supportsThinking;
@@ -158,9 +160,14 @@ export function ChatPanel() {
                         textContent += event.content;
                         updateAssistant((m) => {
                             const segments = [...m.segments];
-                            const idx = segments.findIndex((s) => s.type === "text");
-                            if (idx >= 0) segments[idx] = { type: "text", content: textContent };
-                            else segments.push({ type: "text", content: textContent });
+                            // If we don't have a text segment for this round, create one
+                            if (currentTextSegmentRef.current < 0) {
+                                currentTextSegmentRef.current = segments.length;
+                                segments.push({ type: "text", content: textContent });
+                            } else {
+                                // Update existing text segment for this round
+                                segments[currentTextSegmentRef.current] = { type: "text", content: textContent };
+                            }
                             return { ...m, content: textContent, segments };
                         });
                         break;
@@ -259,9 +266,10 @@ export function ChatPanel() {
             historyRef.current.push({ role: "tool", tool_call_id: tc.id, content: result });
         }
 
-        // Clear tool calls for next round
+        // Clear tool calls and text segment ref for next round
         toolCallsRef.current = {};
         accumulatedReasoningRef.current = "";
+        currentTextSegmentRef.current = -1;  // Reset so next round creates new text segment
 
         // Add new thinking segment if model supports it (matches iOS continueAfterToolCalls)
         if (supportsThinking) {
@@ -310,6 +318,7 @@ export function ChatPanel() {
         abortRef.current = new AbortController();
         toolCallsRef.current = {};
         accumulatedReasoningRef.current = "";
+        currentTextSegmentRef.current = -1;  // Reset for new message
 
         // Process stream
         const { textContent, reasoningContent } = await processStream();
