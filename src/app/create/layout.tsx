@@ -40,10 +40,25 @@ export interface Message {
 	isStreaming?: boolean;
 }
 
-// Extended context matching iOS
+// Project type for loading (matches Supabase schema)
+export interface Project {
+	id: string;
+	title: string;
+	description?: string | null;
+	tags?: string[] | null;
+	html_content?: string | null;
+	css_content?: string | null;
+	js_content?: string | null;
+	is_published: boolean;
+	chat_messages?: HistoryEntry[] | null;
+	thumbnail_url?: string | null;
+}
+
+// Context interface matching iOS ProjectEditorViewModel + ChatViewModel
 interface ProjectEditorContextType {
 	// Identity
 	projectId: string | null;
+	isNew: boolean;
 	// Content
 	projectTitle: string;
 	setProjectTitle: (title: string) => void;
@@ -62,21 +77,23 @@ interface ProjectEditorContextType {
 	setIsPublished: (val: boolean) => void;
 	isDirty: boolean;
 	isSaving: boolean;
+	saveError: string | null;
+	lastSaved: Date | null;
 	// AI Model
 	selectedModel: AIModel;
 	setSelectedModel: (model: AIModel) => void;
 	// Token stats
 	promptTokens: number;
 	setPromptTokens: (tokens: number) => void;
-	// Chat messages (UI display - persists across tab switches)
+	// Chat messages (UI display)
 	messages: Message[];
 	setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
 	// Chat history (for API calls)
 	historyRef: React.RefObject<HistoryEntry[]>;
-	syncHistoryToEditor: () => void;
 	// Actions
 	save: () => Promise<void>;
 	reset: () => void;
+	load: (project: Project) => void;
 	// Tab
 	activeTab: string;
 	setActiveTab: (tab: string) => void;
@@ -153,14 +170,16 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 	const [isPublished, setIsPublishedRaw] = useState(false);
 	const [isDirty, setIsDirty] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
+	const [saveError, setSaveError] = useState<string | null>(null);
+	const [lastSaved, setLastSaved] = useState<Date | null>(null);
 	const [selectedModel, setSelectedModel] = useState<AIModel>("deepseek-chat");
 	const [promptTokens, setPromptTokens] = useState(0);
 	const [activeTab, setActiveTab] = useState("chat");
 
-	// Chat messages for UI display (persists across tab switches)
+	// Chat messages for UI display
 	const [messages, setMessages] = useState<Message[]>([]);
 
-	// Chat history ref (matches iOS ChatViewModel.history)
+	// Chat history ref (for API calls)
 	const historyRef = useRef<HistoryEntry[]>([{ role: "system", content: SYSTEM_PROMPT }]);
 
 	// Dirty-tracking setters
@@ -173,15 +192,72 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 	const setJsContent = useCallback((v: string) => { setJsContentRaw(v); markDirty(); }, [markDirty]);
 	const setIsPublished = useCallback((v: boolean) => { setIsPublishedRaw(v); markDirty(); }, [markDirty]);
 
-	// Sync history to project editor (for persistence)
-	const syncHistoryToEditor = useCallback(() => {
-		markDirty();
-	}, [markDirty]);
+	// Load project (matches iOS ProjectEditorViewModel.load)
+	const load = useCallback((project: Project) => {
+		setProjectId(project.id);
+		setProjectTitleRaw(project.title);
+		setDescriptionRaw(project.description || "");
+		setTagsRaw(project.tags || []);
+		setHtmlContentRaw(project.html_content || "");
+		setCssContentRaw(project.css_content || "");
+		setJsContentRaw(project.js_content || "");
+		setIsPublishedRaw(project.is_published);
+		setIsDirty(false);
+		setSaveError(null);
+
+		// Load chat history
+		if (project.chat_messages && project.chat_messages.length > 0) {
+			historyRef.current = project.chat_messages;
+			// Reconstruct UI messages from history (matches iOS loadFromProjectEditor)
+			const uiMessages: Message[] = [];
+			let currentAssistantMsg: Message | null = null;
+
+			for (const entry of project.chat_messages) {
+				if (entry.role === "system") continue;
+
+				if (entry.role === "user" && entry.content) {
+					if (currentAssistantMsg) {
+						uiMessages.push(currentAssistantMsg);
+						currentAssistantMsg = null;
+					}
+					// Extract user request from context-injected message
+					const content = entry.content;
+					const match = content.match(/\[User Request\]\n([\s\S]*)/);
+					const displayText = match ? match[1] : content;
+					uiMessages.push({ id: crypto.randomUUID(), role: "user", content: displayText, segments: [{ type: "text", content: displayText }] });
+				}
+
+				if (entry.role === "assistant") {
+					if (!currentAssistantMsg) {
+						currentAssistantMsg = { id: crypto.randomUUID(), role: "assistant", content: "", segments: [] };
+					}
+					if (entry.reasoning_content) {
+						currentAssistantMsg.segments.push({ type: "thinking", content: entry.reasoning_content, isActive: false });
+					}
+					if (entry.tool_calls) {
+						for (const tc of entry.tool_calls) {
+							currentAssistantMsg.segments.push({ type: "tool_call", id: tc.id, name: tc.function.name, arguments: tc.function.arguments, isStreaming: false });
+						}
+					}
+					if (entry.content) {
+						currentAssistantMsg.content = entry.content;
+						currentAssistantMsg.segments.push({ type: "text", content: entry.content });
+					}
+				}
+			}
+			if (currentAssistantMsg) uiMessages.push(currentAssistantMsg);
+			setMessages(uiMessages);
+		} else {
+			historyRef.current = [{ role: "system", content: SYSTEM_PROMPT }];
+			setMessages([]);
+		}
+	}, []);
 
 	// Save to Supabase
 	const save = useCallback(async () => {
 		if (!user || isSaving) return;
 		setIsSaving(true);
+		setSaveError(null);
 
 		try {
 			const supabase = createClient();
@@ -198,21 +274,24 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 			};
 
 			if (projectId) {
-				await supabase.from("projects").update(projectData).eq("id", projectId);
+				const { error } = await supabase.from("projects").update(projectData).eq("id", projectId);
+				if (error) throw error;
 			} else {
-				const { data } = await supabase.from("projects").insert(projectData).select("id").single();
+				const { data, error } = await supabase.from("projects").insert(projectData).select("id").single();
+				if (error) throw error;
 				if (data) setProjectId(data.id);
 			}
 
 			setIsDirty(false);
+			setLastSaved(new Date());
 		} catch (err) {
-			console.error("Save failed:", err);
+			setSaveError(err instanceof Error ? err.message : "Save failed");
 		} finally {
 			setIsSaving(false);
 		}
 	}, [user, isSaving, projectId, projectTitle, description, tags, htmlContent, cssContent, jsContent, isPublished]);
 
-	// Reset
+	// Reset (matches iOS ProjectEditorViewModel.reset)
 	const reset = useCallback(() => {
 		setProjectId(null);
 		setProjectTitleRaw("");
@@ -223,7 +302,10 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 		setJsContentRaw("");
 		setIsPublishedRaw(false);
 		setIsDirty(false);
+		setSaveError(null);
+		setLastSaved(null);
 		setPromptTokens(0);
+		setMessages([]);
 		historyRef.current = [{ role: "system", content: SYSTEM_PROMPT }];
 	}, []);
 
@@ -243,14 +325,16 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 </body>
 </html>`;
 
+	const isNew = projectId === null;
+
 	return (
 		<ProjectEditorContext.Provider
 			value={{
-				projectId, projectTitle, setProjectTitle, description, setDescription,
+				projectId, isNew, projectTitle, setProjectTitle, description, setDescription,
 				tags, setTags, htmlContent, setHtmlContent, cssContent, setCssContent,
 				jsContent, setJsContent, isPublished, setIsPublished, isDirty, isSaving,
-				selectedModel, setSelectedModel, promptTokens, setPromptTokens,
-				messages, setMessages, historyRef, syncHistoryToEditor, save, reset, activeTab, setActiveTab,
+				saveError, lastSaved, selectedModel, setSelectedModel, promptTokens, setPromptTokens,
+				messages, setMessages, historyRef, save, reset, load, activeTab, setActiveTab,
 			}}
 		>
 			<SidebarLayout noPadding>
@@ -267,6 +351,7 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 							classNames={{ input: "font-medium" }}
 						/>
 						<div className="flex gap-2">
+							{saveError && <span className="text-tiny text-danger">{saveError}</span>}
 							<Button
 								variant="flat"
 								size="sm"

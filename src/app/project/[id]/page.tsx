@@ -248,9 +248,19 @@ export default function ProjectPage({
 												@{project.creator?.username}
 											</p>
 										</div>
-										{user &&
-											project.creator &&
-											user.id !== project.creator.id && (
+										{user && project.creator && (
+											user.id === project.creator.id ? (
+												<Button
+													as={Link}
+													href={`/create/${project.id}`}
+													color="primary"
+													variant="flat"
+													size="sm"
+													startContent={<Icon icon="solar:pen-bold" />}
+												>
+													Edit
+												</Button>
+											) : (
 												<Button
 													color={isFollowing ? "default" : "primary"}
 													variant={isFollowing ? "bordered" : "solid"}
@@ -259,7 +269,8 @@ export default function ProjectPage({
 												>
 													{isFollowing ? "Following" : "Follow"}
 												</Button>
-											)}
+											)
+										)}
 									</div>
 
 									{/* Title & Description */}

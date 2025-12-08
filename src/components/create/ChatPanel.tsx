@@ -23,7 +23,7 @@ export function ChatPanel() {
     const {
         projectTitle, description, tags, htmlContent, cssContent, jsContent,
         setHtmlContent, setCssContent, setJsContent, setProjectTitle, setDescription, setTags,
-        selectedModel, historyRef, syncHistoryToEditor, setPromptTokens,
+        selectedModel, historyRef, setPromptTokens,
         messages, setMessages,
     } = useProjectEditor();
 
@@ -227,7 +227,7 @@ export function ChatPanel() {
             // No tool calls - add assistant content to history and finish
             if (textContent) {
                 historyRef.current.push({ role: "assistant", content: textContent });
-                syncHistoryToEditor();
+
             }
             setIsLoading(false);
             return;
@@ -259,8 +259,6 @@ export function ChatPanel() {
             historyRef.current.push({ role: "tool", tool_call_id: tc.id, content: result });
         }
 
-        syncHistoryToEditor();
-
         // Clear tool calls for next round
         toolCallsRef.current = {};
         accumulatedReasoningRef.current = "";
@@ -278,7 +276,7 @@ export function ChatPanel() {
 
         // Recursively handle more tool calls or finish
         await finalizeToolCallsAndContinue(newText, newReasoning);
-    }, [historyRef, syncHistoryToEditor, executeTool, supportsThinking, updateAssistant, processStream]);
+    }, [historyRef, executeTool, supportsThinking, updateAssistant, processStream]);
 
     // Send message (matches iOS ChatViewModel.send)
     const handleSend = useCallback(async () => {
@@ -297,7 +295,6 @@ export function ChatPanel() {
 
         // Add to history with context
         historyRef.current.push({ role: "user", content: buildContext(text) });
-        syncHistoryToEditor();
 
         // Create assistant message
         const assistantId = crypto.randomUUID();
@@ -319,7 +316,7 @@ export function ChatPanel() {
 
         // Handle tool calls or finalize
         await finalizeToolCallsAndContinue(textContent, reasoningContent);
-    }, [input, isLoading, clearReasoningFromHistory, historyRef, buildContext, syncHistoryToEditor, supportsThinking, processStream, finalizeToolCallsAndContinue]);
+    }, [input, isLoading, clearReasoningFromHistory, historyRef, buildContext, supportsThinking, processStream, finalizeToolCallsAndContinue]);
 
     const handleStop = useCallback(() => {
         abortRef.current?.abort();
