@@ -55,21 +55,28 @@ export default function ProfilePage({
 			setProfile(profileData);
 
 			// Fetch user's projects
-			const { data: projectsData } = await supabase
+			// Show all projects for own profile, only published for others
+			const isOwnProfile = user?.id === profileData.id;
+			let query = supabase
 				.from("projects")
 				.select(`
-          *,
-          creator:users (
-            id,
-            username,
-            display_name,
-            avatar_url
-          )
-        `)
+				*,
+				creator:users (
+					id,
+					username,
+					display_name,
+					avatar_url
+				)
+			`)
 				.eq("user_id", profileData.id)
-				.eq("is_published", true)
 				.order("created_at", { ascending: false });
 
+			// Only filter by is_published when viewing someone else's profile
+			if (!isOwnProfile) {
+				query = query.eq("is_published", true);
+			}
+
+			const { data: projectsData } = await query;
 			setProjects(projectsData || []);
 
 			// Fetch counts
