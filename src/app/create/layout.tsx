@@ -2,7 +2,7 @@
 
 import { Button, Input, Tab, Tabs } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { createContext, type Key, type ReactNode, useCallback, useContext, useRef, useState } from "react";
+import { createContext, type Key, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { SignInPrompt, signInPrompts } from "@/components/auth/SignInPrompt";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { PageLoading } from "@/components/ui/LoadingState";
@@ -179,6 +179,9 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 	const setJsContent = useCallback((v: string) => { setJsContentRaw(v); markDirty(); }, [markDirty]);
 	const setIsPublished = useCallback((v: boolean) => { setIsPublishedRaw(v); markDirty(); }, [markDirty]);
 
+	// Check if has meaningful content (matches iOS hasContent)
+	const hasContent = htmlContent !== DEFAULT_HTML || cssContent !== DEFAULT_CSS || jsContent !== "" || projectTitle !== "";
+
 	// Load project (matches iOS ProjectEditorViewModel.load)
 	const load = useCallback((project: Project) => {
 		setProjectId(project.id);
@@ -295,6 +298,71 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 		setPromptTokens(0);
 		setMessages([]);
 		historyRef.current = [{ role: "system", content: SYSTEM_PROMPT }];
+	}, []);
+
+	// Refs for auto-save (to access latest state in event handlers)
+	const stateRef = useRef({ user, hasContent, isDirty, isSaving, projectId, projectTitle, description, tags, htmlContent, cssContent, jsContent, isPublished, historyRef });
+	stateRef.current = { user, hasContent, isDirty, isSaving, projectId, projectTitle, description, tags, htmlContent, cssContent, jsContent, isPublished, historyRef };
+
+	// Auto-save on page unload (matches iOS saveAndReset on closeCreate)
+	useEffect(() => {
+		const autoSave = async () => {
+			const s = stateRef.current;
+			if (!s.user || !s.hasContent || !s.isDirty || s.isSaving) return;
+
+			try {
+				const supabase = createClient();
+				const projectData = {
+					user_id: s.user.id,
+					title: s.projectTitle || "Untitled",
+					description: s.description || null,
+					tags: s.tags.length > 0 ? s.tags : null,
+					html_content: s.htmlContent,
+					css_content: s.cssContent,
+					js_content: s.jsContent,
+					is_published: s.isPublished,
+					chat_messages: s.historyRef.current,
+				};
+
+				if (s.projectId) {
+					await supabase.from("projects").update(projectData).eq("id", s.projectId);
+				} else {
+					await supabase.from("projects").insert(projectData);
+				}
+			} catch {
+				// Best effort - don't block unload
+			}
+		};
+
+		const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+			const s = stateRef.current;
+			if (s.hasContent && s.isDirty) {
+				// Trigger save synchronously via sendBeacon would be ideal but Supabase doesn't support it
+				// Show browser's native prompt instead
+				e.preventDefault();
+				e.returnValue = "";
+			}
+		};
+
+		const handleVisibilityChange = () => {
+			if (document.visibilityState === "hidden") {
+				autoSave();
+			}
+		};
+
+		const handlePageHide = () => {
+			autoSave();
+		};
+
+		window.addEventListener("beforeunload", handleBeforeUnload);
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+		window.addEventListener("pagehide", handlePageHide);
+
+		return () => {
+			window.removeEventListener("beforeunload", handleBeforeUnload);
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
+			window.removeEventListener("pagehide", handlePageHide);
+		};
 	}, []);
 
 	if (loading) return <PageLoading />;
