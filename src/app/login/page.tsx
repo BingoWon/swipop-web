@@ -155,7 +155,7 @@ export default function LoginPage() {
 					</Button>
 					<Button
 						startContent={
-							<Icon className="text-default-500" icon="fe:github" width={24} />
+							<Icon className="text-default-500" icon="mdi:github" width={24} />
 						}
 						variant="bordered"
 						onPress={() => handleOAuth("github")}

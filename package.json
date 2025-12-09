@@ -36,10 +36,8 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.8",
-		"@iconify-json/fe": "^1.2.4",
 		"@iconify-json/flat-color-icons": "^1.2.3",
 		"@iconify-json/ic": "^1.2.4",
-		"@iconify-json/logos": "^1.2.10",
 		"@iconify-json/mdi": "^1.2.3",
 		"@iconify-json/solar": "^1.2.5",
 		"@types/node": "^20",

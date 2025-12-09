@@ -35,7 +35,6 @@ const additionalIcons = {
         'home-2-bold', 'user-bold', 'magnifer-bold', 'bell-bold',
         'heart-linear', 'bookmark-linear', 'cloud-check-linear', 'cloud-upload-linear',
     ],
-    logos: ['google-icon', 'apple'],
     mdi: ['github'],
 };
 

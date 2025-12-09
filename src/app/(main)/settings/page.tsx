@@ -48,8 +48,8 @@ export default function SettingsPage() {
 
     const provider = user.app_metadata?.provider || "email";
     const providerIcon = {
-        google: "logos:google-icon",
-        apple: "logos:apple",
+        google: "flat-color-icons:google",
+        apple: "ic:baseline-apple",
         github: "mdi:github",
         email: "solar:letter-bold",
     }[provider] || "solar:user-bold";
