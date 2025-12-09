@@ -82,7 +82,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
                 supabase
                     .from("projects")
                     .select("*, creator:users(*)")
-                    .eq("creator_id", profile.id)
+                    .eq("user_id", profile.id)
                     .order("created_at", { ascending: false }),
                 InteractionService.fetchLikedProjects(profile.id),
                 InteractionService.fetchCollectedProjects(profile.id),
