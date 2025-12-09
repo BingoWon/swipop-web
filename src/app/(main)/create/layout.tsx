@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Input, Tab, Tabs } from "@heroui/react";
+import { Tab, Tabs } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import html2canvas from "html2canvas";
 import { createContext, type Key, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -466,66 +466,29 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 				save, reset, load, activeTab, setActiveTab,
 			}}
 		>
-			<div className="flex flex-col h-screen">
-				{/* Header */}
-				<header className="flex items-center justify-between px-4 py-3 border-b border-divider shrink-0">
-					<Input
-						placeholder="Untitled Project"
-						value={projectTitle}
-						onValueChange={setProjectTitle}
-						variant="bordered"
-						size="sm"
-						className="max-w-xs"
-						classNames={{ input: "font-medium" }}
-					/>
-					<div className="flex gap-2">
-						{saveError && <span className="text-tiny text-danger">{saveError}</span>}
-						<Button
-							variant="flat"
-							size="sm"
-							isLoading={isSaving}
-							isDisabled={!isDirty && !isSaving}
-							onPress={save}
-							startContent={!isSaving && <Icon icon={isDirty ? "solar:cloud-upload-linear" : "solar:cloud-check-linear"} className={isDirty ? "text-warning" : "text-success"} />}
-						>
-							{isSaving ? "Saving..." : isDirty ? "Save" : "Saved"}
-						</Button>
-						<Button
-							color={isPublished ? "success" : "default"}
-							variant={isPublished ? "solid" : "flat"}
-							size="sm"
-							onPress={() => setIsPublished(!isPublished)}
-							startContent={<Icon icon={isPublished ? "solar:eye-bold" : "solar:eye-closed-linear"} />}
-						>
-							{isPublished ? "Published" : "Draft"}
-						</Button>
-					</div>
-				</header>
+			{/* Use negative margin to cancel out SidebarLayout's unified padding for full-screen editor */}
+			<div className="-m-4 md:-m-6 h-[calc(100vh)] flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
+				{/* Left: Preview */}
+				<div className="flex-1 bg-black rounded-large overflow-hidden min-h-[300px] lg:min-h-0">
+					<iframe ref={previewRef} srcDoc={previewSrcDoc} sandbox="allow-scripts allow-same-origin" className="w-full h-full border-0" title="Preview" />
+				</div>
 
-				{/* Main Content */}
-				<main className="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
-					{/* Left: Preview */}
-					<div className="flex-1 bg-black rounded-large overflow-hidden min-h-[300px] lg:min-h-0">
-						<iframe ref={previewRef} srcDoc={previewSrcDoc} sandbox="allow-scripts allow-same-origin" className="w-full h-full border-0" title="Preview" />
-					</div>
-
-					{/* Right: Tabbed Panel */}
-					<div className="flex-1 border border-divider rounded-large bg-content1 overflow-hidden flex flex-col min-h-[400px] lg:min-h-0">
-						<Tabs
-							fullWidth
-							selectedKey={activeTab}
-							onSelectionChange={(key: Key) => setActiveTab(key as string)}
-							classNames={{ base: "border-b border-divider", tabList: "p-0 gap-0", tab: "h-10", panel: "hidden" }}
-						>
-							<Tab key="chat" title={<TabTitle icon="solar:magic-stick-3-bold" label="Chat" />} />
-							<Tab key="options" title={<TabTitle icon="solar:settings-bold" label="Options" />} />
-							<Tab key="html" title={<TabTitle icon="solar:code-bold" label="HTML" />} />
-							<Tab key="css" title={<TabTitle icon="solar:pallete-2-bold" label="CSS" />} />
-							<Tab key="js" title={<TabTitle icon="solar:programming-bold" label="JS" />} />
-						</Tabs>
-						<div className="flex-1 overflow-hidden">{children}</div>
-					</div>
-				</main>
+				{/* Right: Tabbed Panel */}
+				<div className="flex-1 border border-divider rounded-large bg-content1 overflow-hidden flex flex-col min-h-[400px] lg:min-h-0">
+					<Tabs
+						fullWidth
+						selectedKey={activeTab}
+						onSelectionChange={(key: Key) => setActiveTab(key as string)}
+						classNames={{ base: "border-b border-divider", tabList: "p-0 gap-0", tab: "h-10", panel: "hidden" }}
+					>
+						<Tab key="chat" title={<TabTitle icon="solar:magic-stick-3-bold" label="Chat" />} />
+						<Tab key="options" title={<TabTitle icon="solar:settings-bold" label="Options" />} />
+						<Tab key="html" title={<TabTitle icon="solar:code-bold" label="HTML" />} />
+						<Tab key="css" title={<TabTitle icon="solar:pallete-2-bold" label="CSS" />} />
+						<Tab key="js" title={<TabTitle icon="solar:programming-bold" label="JS" />} />
+					</Tabs>
+					<div className="flex-1 overflow-hidden">{children}</div>
+				</div>
 			</div>
 		</ProjectEditorContext.Provider>
 	);

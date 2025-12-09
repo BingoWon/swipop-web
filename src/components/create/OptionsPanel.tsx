@@ -23,6 +23,7 @@ export function OptionsPanel() {
         selectedModel, setSelectedModel,
         promptTokens,
         reset,
+        save, isSaving, isDirty, saveError,
         // Thumbnail
         thumbnailBlob, thumbnailUrl, thumbnailAspectRatio, isCapturingThumbnail,
         captureThumbnail, setThumbnailFromFile, removeThumbnail,
@@ -66,6 +67,36 @@ export function OptionsPanel() {
 
     return (
         <div className="h-full overflow-auto p-4 space-y-6">
+            {/* Save Section */}
+            <Section title="Save" icon="solar:cloud-bold">
+                <Card className="bg-content2">
+                    <CardBody className="p-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Icon
+                                    icon={isSaving ? "solar:refresh-bold" : isDirty ? "solar:cloud-upload-linear" : "solar:cloud-check-bold"}
+                                    className={`text-xl ${isSaving ? "animate-spin text-primary" : isDirty ? "text-warning" : "text-success"}`}
+                                />
+                                <div>
+                                    <p className="font-medium">{isSaving ? "Saving..." : isDirty ? "Unsaved changes" : "All changes saved"}</p>
+                                    {saveError && <p className="text-tiny text-danger">{saveError}</p>}
+                                </div>
+                            </div>
+                            <Button
+                                size="sm"
+                                color={isDirty ? "primary" : "default"}
+                                variant={isDirty ? "solid" : "flat"}
+                                isLoading={isSaving}
+                                isDisabled={!isDirty && !isSaving}
+                                onPress={save}
+                            >
+                                Save
+                            </Button>
+                        </div>
+                    </CardBody>
+                </Card>
+            </Section>
+
             {/* Thumbnail Section */}
             <Section title="Thumbnail" icon="solar:gallery-bold">
                 <div className="space-y-4">

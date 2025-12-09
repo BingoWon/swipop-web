@@ -131,20 +131,16 @@ export default function ProjectPage({
 
 	if (loading) {
 		return (
-			<div className="p-4 md:p-6">
-				<div className="flex items-center justify-center h-[80vh]">
-					<Spinner size="lg" />
-				</div>
+			<div className="flex items-center justify-center h-[80vh]">
+				<Spinner size="lg" />
 			</div>
 		);
 	}
 
 	if (!project) {
 		return (
-			<div className="p-4 md:p-6">
-				<div className="flex items-center justify-center h-[80vh]">
-					<p className="text-default-500">Project not found</p>
-				</div>
+			<div className="flex items-center justify-center h-[80vh]">
+				<p className="text-default-500">Project not found</p>
 			</div>
 		);
 	}
@@ -156,249 +152,247 @@ export default function ProjectPage({
 		project.creator?.display_name?.[0] || project.creator?.username?.[0] || "U";
 
 	return (
-		<div className="p-4 md:p-6">
-			<div className="flex flex-col lg:flex-row h-[calc(100vh-80px)] gap-4 lg:gap-6">
-				{/* Left: Preview */}
-				<div className="flex-1 bg-black rounded-large overflow-hidden min-h-[300px] lg:min-h-0">
-					<iframe
-						srcDoc={previewSrcDoc}
-						sandbox="allow-scripts"
-						className="w-full h-full border-0"
-						title={project.title || "Project Preview"}
+		<div className="flex flex-col lg:flex-row h-[calc(100vh-80px)] gap-4 lg:gap-6">
+			{/* Left: Preview */}
+			<div className="flex-1 bg-black rounded-large overflow-hidden min-h-[300px] lg:min-h-0">
+				<iframe
+					srcDoc={previewSrcDoc}
+					sandbox="allow-scripts"
+					className="w-full h-full border-0"
+					title={project.title || "Project Preview"}
+				/>
+			</div>
+
+			{/* Right: Tabbed Content (Info/HTML/CSS/JS) */}
+			<div className="flex-1 border border-divider rounded-large bg-content1 overflow-hidden flex flex-col min-h-[400px] lg:min-h-0">
+				<Tabs
+					fullWidth
+					selectedKey={activeTab}
+					onSelectionChange={(key: Key) => setActiveTab(key as TabKey)}
+					classNames={{
+						base: "border-b border-divider",
+						tabList: "p-0 gap-0",
+						tab: "h-10",
+						panel: "hidden",
+					}}
+				>
+					<Tab
+						key="info"
+						title={
+							<div className="flex items-center gap-1.5">
+								<Icon icon="solar:info-circle-bold" />
+								<span>Info</span>
+							</div>
+						}
 					/>
-				</div>
+					<Tab
+						key="html"
+						title={
+							<div className="flex items-center gap-1.5">
+								<Icon icon="solar:code-bold" />
+								<span>HTML</span>
+							</div>
+						}
+					/>
+					<Tab
+						key="css"
+						title={
+							<div className="flex items-center gap-1.5">
+								<Icon icon="solar:pallete-2-bold" />
+								<span>CSS</span>
+							</div>
+						}
+					/>
+					<Tab
+						key="js"
+						title={
+							<div className="flex items-center gap-1.5">
+								<Icon icon="solar:programming-bold" />
+								<span>JS</span>
+							</div>
+						}
+					/>
+				</Tabs>
 
-				{/* Right: Tabbed Content (Info/HTML/CSS/JS) */}
-				<div className="flex-1 border border-divider rounded-large bg-content1 overflow-hidden flex flex-col min-h-[400px] lg:min-h-0">
-					<Tabs
-						fullWidth
-						selectedKey={activeTab}
-						onSelectionChange={(key: Key) => setActiveTab(key as TabKey)}
-						classNames={{
-							base: "border-b border-divider",
-							tabList: "p-0 gap-0",
-							tab: "h-10",
-							panel: "hidden",
-						}}
-					>
-						<Tab
-							key="info"
-							title={
-								<div className="flex items-center gap-1.5">
-									<Icon icon="solar:info-circle-bold" />
-									<span>Info</span>
-								</div>
-							}
-						/>
-						<Tab
-							key="html"
-							title={
-								<div className="flex items-center gap-1.5">
-									<Icon icon="solar:code-bold" />
-									<span>HTML</span>
-								</div>
-							}
-						/>
-						<Tab
-							key="css"
-							title={
-								<div className="flex items-center gap-1.5">
-									<Icon icon="solar:pallete-2-bold" />
-									<span>CSS</span>
-								</div>
-							}
-						/>
-						<Tab
-							key="js"
-							title={
-								<div className="flex items-center gap-1.5">
-									<Icon icon="solar:programming-bold" />
-									<span>JS</span>
-								</div>
-							}
-						/>
-					</Tabs>
-
-					{/* Tab Content */}
-					<div className="flex-1 overflow-hidden">
-						{activeTab === "info" ? (
-							<ScrollShadow className="h-full overflow-auto">
-								<div className="p-4 md:p-6 space-y-5">
-									{/* Creator Section */}
-									<div className="flex items-center gap-3">
-										<Link href={`/profile/${project.creator?.username}`}>
-											<Avatar
-												size="md"
-												showFallback
-												name={creatorInitial}
-												src={creatorAvatar || undefined}
-												imgProps={{ referrerPolicy: "no-referrer" }}
-											/>
+				{/* Tab Content */}
+				<div className="flex-1 overflow-hidden">
+					{activeTab === "info" ? (
+						<ScrollShadow className="h-full overflow-auto">
+							<div className="p-4 md:p-6 space-y-5">
+								{/* Creator Section */}
+								<div className="flex items-center gap-3">
+									<Link href={`/profile/${project.creator?.username}`}>
+										<Avatar
+											size="md"
+											showFallback
+											name={creatorInitial}
+											src={creatorAvatar || undefined}
+											imgProps={{ referrerPolicy: "no-referrer" }}
+										/>
+									</Link>
+									<div className="flex-1 min-w-0">
+										<Link
+											href={`/profile/${project.creator?.username}`}
+											className="font-medium hover:underline truncate block"
+										>
+											{project.creator?.display_name ||
+												project.creator?.username}
 										</Link>
-										<div className="flex-1 min-w-0">
-											<Link
-												href={`/profile/${project.creator?.username}`}
-												className="font-medium hover:underline truncate block"
+										<p className="text-small text-default-400 truncate">
+											@{project.creator?.username}
+										</p>
+									</div>
+									{user && project.creator && (
+										user.id === project.creator.id ? (
+											<Button
+												as={Link}
+												href={`/create/${project.id}`}
+												color="primary"
+												variant="flat"
+												size="sm"
+												startContent={<Icon icon="solar:pen-bold" />}
 											>
-												{project.creator?.display_name ||
-													project.creator?.username}
-											</Link>
-											<p className="text-small text-default-400 truncate">
-												@{project.creator?.username}
-											</p>
+												Edit
+											</Button>
+										) : (
+											<Button
+												color={isFollowing ? "default" : "primary"}
+												variant={isFollowing ? "bordered" : "solid"}
+												size="sm"
+												onPress={handleFollow}
+											>
+												{isFollowing ? "Following" : "Follow"}
+											</Button>
+										)
+									)}
+								</div>
+
+								{/* Title & Description */}
+								<div>
+									<h1 className="text-xl font-bold">
+										{project.title || "Untitled"}
+									</h1>
+									{project.description && (
+										<p className="text-default-500 text-small mt-1">
+											{project.description}
+										</p>
+									)}
+								</div>
+
+								{/* Tags */}
+								{project.tags && project.tags.length > 0 && (
+									<div className="flex flex-wrap gap-1">
+										{project.tags.map((tag) => (
+											<Chip key={tag} size="sm" variant="flat">
+												#{tag}
+											</Chip>
+										))}
+									</div>
+								)}
+
+								{/* Stats Row */}
+								<div className="grid grid-cols-5 gap-1 py-2">
+									<StatTile icon="solar:eye-bold" count={project.view_count} />
+									<StatTile
+										icon={isLiked ? "solar:heart-bold" : "solar:heart-linear"}
+										count={likeCount}
+										color={isLiked ? "text-danger" : undefined}
+										onClick={user ? handleLike : undefined}
+									/>
+									<StatTile
+										icon="solar:chat-round-dots-bold"
+										count={project.comment_count}
+									/>
+									<StatTile
+										icon={
+											isCollected
+												? "solar:bookmark-bold"
+												: "solar:bookmark-linear"
+										}
+										count={project.collect_count}
+										color={isCollected ? "text-warning" : undefined}
+										onClick={user ? handleCollect : undefined}
+									/>
+									<StatTile
+										icon="solar:share-bold"
+										count={project.share_count}
+									/>
+								</div>
+
+								{/* Comment Input */}
+								{user && (
+									<div className="space-y-2 border-t border-divider pt-4">
+										<Textarea
+											placeholder="Add a comment..."
+											value={newComment}
+											onValueChange={setNewComment}
+											minRows={2}
+											size="sm"
+										/>
+										<div className="flex justify-end">
+											<Button
+												color="primary"
+												size="sm"
+												onPress={handleSubmitComment}
+												isLoading={isSubmitting}
+												isDisabled={!newComment.trim()}
+											>
+												Post
+											</Button>
 										</div>
-										{user && project.creator && (
-											user.id === project.creator.id ? (
-												<Button
-													as={Link}
-													href={`/create/${project.id}`}
-													color="primary"
-													variant="flat"
-													size="sm"
-													startContent={<Icon icon="solar:pen-bold" />}
-												>
-													Edit
-												</Button>
-											) : (
-												<Button
-													color={isFollowing ? "default" : "primary"}
-													variant={isFollowing ? "bordered" : "solid"}
-													size="sm"
-													onPress={handleFollow}
-												>
-													{isFollowing ? "Following" : "Follow"}
-												</Button>
-											)
-										)}
 									</div>
+								)}
 
-									{/* Title & Description */}
-									<div>
-										<h1 className="text-xl font-bold">
-											{project.title || "Untitled"}
-										</h1>
-										{project.description && (
-											<p className="text-default-500 text-small mt-1">
-												{project.description}
-											</p>
-										)}
-									</div>
-
-									{/* Tags */}
-									{project.tags && project.tags.length > 0 && (
-										<div className="flex flex-wrap gap-1">
-											{project.tags.map((tag) => (
-												<Chip key={tag} size="sm" variant="flat">
-													#{tag}
-												</Chip>
+								{/* Comments List */}
+								<div className="border-t border-divider pt-4">
+									<h3 className="font-medium text-small mb-3">
+										Comments ({comments.length})
+									</h3>
+									{comments.length > 0 ? (
+										<div className="space-y-3">
+											{comments.map((comment) => (
+												<div key={comment.id} className="flex gap-2">
+													<Avatar
+														size="sm"
+														showFallback
+														name={comment.profile?.display_name?.[0] || "U"}
+														src={comment.profile?.avatar_url || undefined}
+													/>
+													<div className="flex-1 min-w-0">
+														<Link
+															href={`/profile/${comment.profile?.username}`}
+															className="text-small font-medium hover:underline"
+														>
+															{comment.profile?.display_name ||
+																comment.profile?.username}
+														</Link>
+														<p className="text-small text-default-500 break-words">
+															{comment.content}
+														</p>
+													</div>
+												</div>
 											))}
 										</div>
+									) : (
+										<p className="text-small text-default-400">
+											No comments yet
+										</p>
 									)}
-
-									{/* Stats Row */}
-									<div className="grid grid-cols-5 gap-1 py-2">
-										<StatTile icon="solar:eye-bold" count={project.view_count} />
-										<StatTile
-											icon={isLiked ? "solar:heart-bold" : "solar:heart-linear"}
-											count={likeCount}
-											color={isLiked ? "text-danger" : undefined}
-											onClick={user ? handleLike : undefined}
-										/>
-										<StatTile
-											icon="solar:chat-round-dots-bold"
-											count={project.comment_count}
-										/>
-										<StatTile
-											icon={
-												isCollected
-													? "solar:bookmark-bold"
-													: "solar:bookmark-linear"
-											}
-											count={project.collect_count}
-											color={isCollected ? "text-warning" : undefined}
-											onClick={user ? handleCollect : undefined}
-										/>
-										<StatTile
-											icon="solar:share-bold"
-											count={project.share_count}
-										/>
-									</div>
-
-									{/* Comment Input */}
-									{user && (
-										<div className="space-y-2 border-t border-divider pt-4">
-											<Textarea
-												placeholder="Add a comment..."
-												value={newComment}
-												onValueChange={setNewComment}
-												minRows={2}
-												size="sm"
-											/>
-											<div className="flex justify-end">
-												<Button
-													color="primary"
-													size="sm"
-													onPress={handleSubmitComment}
-													isLoading={isSubmitting}
-													isDisabled={!newComment.trim()}
-												>
-													Post
-												</Button>
-											</div>
-										</div>
-									)}
-
-									{/* Comments List */}
-									<div className="border-t border-divider pt-4">
-										<h3 className="font-medium text-small mb-3">
-											Comments ({comments.length})
-										</h3>
-										{comments.length > 0 ? (
-											<div className="space-y-3">
-												{comments.map((comment) => (
-													<div key={comment.id} className="flex gap-2">
-														<Avatar
-															size="sm"
-															showFallback
-															name={comment.profile?.display_name?.[0] || "U"}
-															src={comment.profile?.avatar_url || undefined}
-														/>
-														<div className="flex-1 min-w-0">
-															<Link
-																href={`/profile/${comment.profile?.username}`}
-																className="text-small font-medium hover:underline"
-															>
-																{comment.profile?.display_name ||
-																	comment.profile?.username}
-															</Link>
-															<p className="text-small text-default-500 break-words">
-																{comment.content}
-															</p>
-														</div>
-													</div>
-												))}
-											</div>
-										) : (
-											<p className="text-small text-default-400">
-												No comments yet
-											</p>
-										)}
-									</div>
 								</div>
-							</ScrollShadow>
-						) : (
-							<CodeBlock
-								code={
-									activeTab === "html"
-										? project.html_content || "<!-- No HTML content -->"
-										: activeTab === "css"
-											? project.css_content || "/* No CSS content */"
-											: project.js_content || "// No JavaScript content"
-								}
-								language={activeTab === "js" ? "javascript" : activeTab}
-							/>
-						)}
-					</div>
+							</div>
+						</ScrollShadow>
+					) : (
+						<CodeBlock
+							code={
+								activeTab === "html"
+									? project.html_content || "<!-- No HTML content -->"
+									: activeTab === "css"
+										? project.css_content || "/* No CSS content */"
+										: project.js_content || "// No JavaScript content"
+							}
+							language={activeTab === "js" ? "javascript" : activeTab}
+						/>
+					)}
 				</div>
 			</div>
 		</div>

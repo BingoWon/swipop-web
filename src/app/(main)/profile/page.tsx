@@ -13,11 +13,11 @@ export default function ProfilePage() {
     const { user, profile, loading } = useAuth();
 
     if (loading || (user && !profile)) {
-        return <div className="p-4 md:p-6"><PageLoading /></div>;
+        return <PageLoading />;
     }
 
     if (!user) {
-        return <div className="p-4 md:p-6 h-[60vh]"><SignInPrompt {...signInPrompts.profile} /></div>;
+        return <SignInPrompt {...signInPrompts.profile} />;
     }
 
     redirect(`/profile/${profile!.username}`);
