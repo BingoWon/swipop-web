@@ -18,8 +18,6 @@ interface FeedStore {
     // Actions
     loadInitial: (userId?: string) => Promise<void>;
     refresh: (userId?: string) => Promise<void>;
-    markNeedsRefresh: () => void;
-    refreshIfNeeded: (userId?: string) => Promise<void>;
     reset: () => void;
 }
 
@@ -72,16 +70,6 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
         } catch (err) {
             console.error("Feed fetch error:", err);
             set({ error: "Failed to load projects", isLoading: false });
-        }
-    },
-
-    markNeedsRefresh: () => {
-        set({ hasInitialLoad: false });
-    },
-
-    refreshIfNeeded: async (userId) => {
-        if (!get().hasInitialLoad) {
-            await get().loadInitial(userId);
         }
     },
 

@@ -65,6 +65,10 @@ export function EditProfileModal({ profile, isOpen, onClose, onSave }: EditProfi
                 alert("File too large. Max size is 5MB.");
                 return;
             }
+            // Revoke old object URL to prevent memory leak
+            if (avatarPreview && avatarPreview.startsWith("blob:")) {
+                URL.revokeObjectURL(avatarPreview);
+            }
             setAvatarFile(file);
             setAvatarPreview(URL.createObjectURL(file));
         }
