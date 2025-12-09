@@ -1,8 +1,8 @@
 "use client";
 
-import { Avatar, Card, CardBody, cn } from "@heroui/react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Avatar, Card, cn } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { useState, useEffect } from "react";
 import { type Message, type Segment } from "@/app/(main)/create/layout";
 
 // Constants
@@ -49,7 +49,11 @@ function renderSegment(segment: Segment, index: number, isUser: boolean) {
 			if (!segment.content) return null;
 			return (
 				<div key={index} className={cn("rounded-medium px-4 py-3", isUser ? "bg-primary text-primary-foreground" : "bg-content2")}>
-					<p className="text-small whitespace-pre-wrap">{segment.content}</p>
+					{isUser ? (
+						<p className="text-small whitespace-pre-wrap">{segment.content}</p>
+					) : (
+						<RichTextContent content={segment.content} />
+					)}
 				</div>
 			);
 
@@ -64,14 +68,136 @@ function renderSegment(segment: Segment, index: number, isUser: boolean) {
 	}
 }
 
+// ============================================================================
+// RichTextContent - Markdown rendering matching iOS RichMessageContent
+// ============================================================================
+
+interface ContentBlock {
+	type: "text" | "code";
+	content: string;
+	language?: string;
+}
+
+function parseContentBlocks(content: string): ContentBlock[] {
+	const blocks: ContentBlock[] = [];
+	const codeBlockRegex = /```(\w*)\n?([\s\S]*?)```/g;
+	let lastEnd = 0;
+	let match;
+
+	while ((match = codeBlockRegex.exec(content)) !== null) {
+		// Text before code block
+		if (match.index > lastEnd) {
+			const text = content.slice(lastEnd, match.index).trim();
+			if (text) blocks.push({ type: "text", content: text });
+		}
+		// Code block
+		const code = match[2].trim();
+		if (code) blocks.push({ type: "code", content: code, language: match[1] || undefined });
+		lastEnd = match.index + match[0].length;
+	}
+
+	// Remaining text
+	if (lastEnd < content.length) {
+		const text = content.slice(lastEnd).trim();
+		if (text) blocks.push({ type: "text", content: text });
+	}
+
+	// If no blocks, return whole content as text
+	if (blocks.length === 0) blocks.push({ type: "text", content });
+
+	return blocks;
+}
+
+function RichTextContent({ content }: { content: string }) {
+	const blocks = useMemo(() => parseContentBlocks(content), [content]);
+
+	return (
+		<div className="space-y-2 text-left">
+			{blocks.map((block, i) =>
+				block.type === "code" ? (
+					<CodeBlock key={i} code={block.content} language={block.language} />
+				) : (
+					<MarkdownText key={i} content={block.content} />
+				)
+			)}
+		</div>
+	);
+}
+
+function MarkdownText({ content }: { content: string }) {
+	// Simple markdown: **bold**, *italic*, `code`, [link](url)
+	const rendered = useMemo(() => {
+		const parts: React.ReactNode[] = [];
+		// Regex for: **bold**, *italic*, `code`
+		const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/g;
+		let lastIndex = 0;
+		let match;
+		let keyIdx = 0;
+
+		while ((match = regex.exec(content)) !== null) {
+			// Add text before match
+			if (match.index > lastIndex) {
+				parts.push(content.slice(lastIndex, match.index));
+			}
+			// Determine type
+			if (match[2]) {
+				// **bold**
+				parts.push(<strong key={keyIdx++} className="font-semibold">{match[2]}</strong>);
+			} else if (match[3]) {
+				// *italic*
+				parts.push(<em key={keyIdx++}>{match[3]}</em>);
+			} else if (match[4]) {
+				// `code`
+				parts.push(
+					<code key={keyIdx++} className="px-1 py-0.5 rounded bg-default-200 font-mono text-[0.85em]">
+						{match[4]}
+					</code>
+				);
+			}
+			lastIndex = match.index + match[0].length;
+		}
+		// Add remaining text
+		if (lastIndex < content.length) {
+			parts.push(content.slice(lastIndex));
+		}
+		return parts.length > 0 ? parts : content;
+	}, [content]);
+
+	return <p className="text-small whitespace-pre-wrap">{rendered}</p>;
+}
+
+function CodeBlock({ code, language }: { code: string; language?: string }) {
+	const [copied, setCopied] = useState(false);
+
+	const handleCopy = () => {
+		navigator.clipboard.writeText(code);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
+	};
+
+	return (
+		<div className="rounded-lg overflow-hidden border border-divider bg-content2/50">
+			{language && (
+				<div className="flex items-center justify-between px-3 py-1.5 bg-content2 border-b border-divider">
+					<span className="text-tiny font-mono text-default-500 uppercase">{language}</span>
+					<button onClick={handleCopy} className="text-default-400 hover:text-foreground transition-colors">
+						<Icon icon={copied ? "solar:check-circle-bold" : "solar:copy-bold"} className="text-sm" />
+					</button>
+				</div>
+			)}
+			<pre className="px-3 py-2 text-tiny font-mono overflow-x-auto whitespace-pre-wrap text-foreground/90">{code}</pre>
+		</div>
+	);
+}
+
+// ============================================================================
+// ToolCallSegment
+// ============================================================================
+
 interface ToolCallSegmentProps {
 	segment: Extract<Segment, { type: "tool_call" }>;
 }
 
-/**
- * Tool call segment - matches iOS ToolCallView.swift
- * Uses "Calling/Called" text pattern, displays full tool name
- */
 function ToolCallSegment({ segment }: ToolCallSegmentProps) {
 	const { name, arguments: args, isStreaming, result } = segment;
 	const isComplete = !isStreaming && result !== undefined;
@@ -89,7 +215,6 @@ function ToolCallSegment({ segment }: ToolCallSegmentProps) {
 			isPressable={hasContent}
 			onPress={() => hasContent && setIsExpanded(!isExpanded)}
 		>
-			{/* Header - matches iOS layout */}
 			<div className="flex items-center gap-2 px-3 py-2.5 shrink-0">
 				<Icon
 					icon={icon}
@@ -109,15 +234,14 @@ function ToolCallSegment({ segment }: ToolCallSegmentProps) {
 				)}
 			</div>
 
-			{/* Expanded content - matches iOS */}
 			{isExpanded && hasContent && (
 				<>
-					<div className="border-t border-divider px-3 py-2">
+					<div className="border-t border-divider px-3 py-2 text-left">
 						<p className="text-tiny text-default-500 mb-1">{isStreaming ? "Arguments (streaming...)" : "Arguments"}</p>
 						<pre className="text-tiny font-mono text-foreground/80 whitespace-pre-wrap max-h-[200px] overflow-auto">{args}</pre>
 					</div>
 					{result && (
-						<div className="border-t border-divider px-3 py-2">
+						<div className="border-t border-divider px-3 py-2 text-left">
 							<p className="text-tiny text-default-500 mb-1">Result</p>
 							<pre className="text-tiny font-mono text-success whitespace-pre-wrap">{result}</pre>
 						</div>
@@ -128,6 +252,10 @@ function ToolCallSegment({ segment }: ToolCallSegmentProps) {
 	);
 }
 
+// ============================================================================
+// ThinkingSegment
+// ============================================================================
+
 interface ThinkingSegmentProps {
 	text: string;
 	isActive: boolean;
@@ -136,7 +264,6 @@ interface ThinkingSegmentProps {
 
 function ThinkingSegment({ text, isActive, startTime }: ThinkingSegmentProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
-	// For historical thinking (startTime=0), don't show elapsed time
 	const [elapsed, setElapsed] = useState(() => startTime > 0 ? Math.floor((Date.now() - startTime) / 1000) : 0);
 
 	useEffect(() => {
@@ -162,7 +289,7 @@ function ThinkingSegment({ text, isActive, startTime }: ThinkingSegmentProps) {
 				{text && <Icon icon="solar:alt-arrow-right-linear" className={cn("text-default-400 ml-auto shrink-0 transition-transform", isExpanded && "rotate-90")} />}
 			</div>
 			{isExpanded && text && (
-				<div className="border-t border-divider px-3 py-2">
+				<div className="border-t border-divider px-3 py-2 text-left">
 					<p className="text-tiny text-default-500 whitespace-pre-wrap max-h-[200px] overflow-auto">{text}</p>
 				</div>
 			)}

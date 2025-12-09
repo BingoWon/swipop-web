@@ -169,7 +169,17 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 	const [isSaving, setIsSaving] = useState(false);
 	const [saveError, setSaveError] = useState<string | null>(null);
 	const [lastSaved, setLastSaved] = useState<Date | null>(null);
-	const [selectedModel, setSelectedModel] = useState<AIModel>("deepseek-chat");
+	const [selectedModel, setSelectedModelRaw] = useState<AIModel>(() => {
+		if (typeof window !== "undefined") {
+			const saved = localStorage.getItem("selectedAIModel");
+			if (saved === "deepseek-chat" || saved === "deepseek-reasoner") return saved;
+		}
+		return "deepseek-chat";
+	});
+	const setSelectedModel = useCallback((model: AIModel) => {
+		setSelectedModelRaw(model);
+		localStorage.setItem("selectedAIModel", model);
+	}, []);
 	const [promptTokens, setPromptTokens] = useState(0);
 	const [activeTab, setActiveTab] = useState("chat");
 
