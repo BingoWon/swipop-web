@@ -95,43 +95,36 @@ export default function SettingsPage() {
                             </div>
                             <Chip size="sm" variant="flat" color="success">Connected</Chip>
                         </div>
-                    </CardBody>
-                </Card>
-
-                <Card className="border-danger/50">
-                    <CardHeader className="flex gap-3">
-                        <Icon icon="solar:danger-triangle-bold" className="text-2xl text-danger" />
-                        <div className="flex flex-col">
-                            <p className="text-md font-semibold text-danger">Danger Zone</p>
-                            <p className="text-small text-default-500">Irreversible actions</p>
-                        </div>
-                    </CardHeader>
-                    <Divider />
-                    <CardBody className="gap-4">
+                        <Divider />
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="font-medium">Sign Out</p>
                                 <p className="text-small text-default-500">Sign out of your account on this device</p>
                             </div>
                             <Button
-                                color="default"
-                                variant="bordered"
+                                variant="flat"
                                 startContent={<Icon icon="solar:logout-2-bold" />}
                                 onPress={logoutModal.onOpen}
                             >
                                 Sign Out
                             </Button>
                         </div>
-                        <Divider />
+                    </CardBody>
+                </Card>
+
+                <Card className="border-danger/50">
+                    <CardBody>
                         <div className="flex items-center justify-between">
-                            <div>
-                                <p className="font-medium">Delete Account</p>
-                                <p className="text-small text-default-500">Permanently delete your account and all data</p>
+                            <div className="flex items-center gap-3">
+                                <Icon icon="solar:trash-bin-trash-bold" className="text-xl text-danger" />
+                                <div>
+                                    <p className="font-medium">Delete Account</p>
+                                    <p className="text-small text-default-500">Permanently delete your account and all data</p>
+                                </div>
                             </div>
                             <Button
                                 color="danger"
                                 variant="flat"
-                                startContent={<Icon icon="solar:trash-bin-trash-bold" />}
                                 onPress={deleteModal.onOpen}
                             >
                                 Delete
