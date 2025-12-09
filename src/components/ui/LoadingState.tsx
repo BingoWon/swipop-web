@@ -1,17 +1,15 @@
 "use client";
 
-import { SidebarLayout } from "@/components/layout/SidebarLayout";
+import { Spinner } from "@heroui/react";
 
 /**
- * Full-page loading state with SidebarLayout
+ * Full-page loading state (used inside pages that already have SidebarLayout)
  */
 export function PageLoading() {
     return (
-        <SidebarLayout>
-            <div className="flex items-center justify-center h-full">
-                <div className="animate-pulse text-default-400">Loading...</div>
-            </div>
-        </SidebarLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+            <Spinner size="lg" />
+        </div>
     );
 }
 
@@ -25,3 +23,4 @@ export function LoadingSpinner({ className = "" }: { className?: string }) {
         </div>
     );
 }
+

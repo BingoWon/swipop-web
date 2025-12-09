@@ -17,7 +17,6 @@ import {
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { PageLoading } from "@/components/ui/LoadingState";
 import { useAuth } from "@/lib/contexts/AuthContext";
 
@@ -31,12 +30,10 @@ export default function SettingsPage() {
     const deleteModal = useDisclosure();
     const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
-    // Show loading state
     if (loading) {
-        return <PageLoading />;
+        return <div className="p-4 md:p-6"><PageLoading /></div>;
     }
 
-    // Redirect to login if not authenticated
     if (!user) {
         router.push("/login");
         return null;
@@ -49,7 +46,6 @@ export default function SettingsPage() {
         router.push("/");
     };
 
-    // Extract OAuth provider from user metadata
     const provider = user.app_metadata?.provider || "email";
     const providerIcon = {
         google: "logos:google-icon",
@@ -66,11 +62,10 @@ export default function SettingsPage() {
     }[provider] || provider;
 
     return (
-        <SidebarLayout>
+        <div className="p-4 md:p-6">
             <div className="max-w-xl mx-auto space-y-6">
                 <h1 className="text-2xl font-bold">Settings</h1>
 
-                {/* Account Section */}
                 <Card>
                     <CardHeader className="flex gap-3">
                         <Icon icon="solar:user-circle-bold" className="text-2xl text-primary" />
@@ -81,7 +76,6 @@ export default function SettingsPage() {
                     </CardHeader>
                     <Divider />
                     <CardBody className="gap-4">
-                        {/* Email */}
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Icon icon="solar:letter-bold" className="text-xl text-default-400" />
@@ -91,8 +85,6 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                         </div>
-
-                        {/* OAuth Provider */}
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Icon icon={providerIcon} className="text-xl" />
@@ -106,7 +98,6 @@ export default function SettingsPage() {
                     </CardBody>
                 </Card>
 
-                {/* Danger Zone */}
                 <Card className="border-danger/50">
                     <CardHeader className="flex gap-3">
                         <Icon icon="solar:danger-triangle-bold" className="text-2xl text-danger" />
@@ -117,7 +108,6 @@ export default function SettingsPage() {
                     </CardHeader>
                     <Divider />
                     <CardBody className="gap-4">
-                        {/* Sign Out */}
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="font-medium">Sign Out</p>
@@ -132,10 +122,7 @@ export default function SettingsPage() {
                                 Sign Out
                             </Button>
                         </div>
-
                         <Divider />
-
-                        {/* Delete Account */}
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="font-medium">Delete Account</p>
@@ -154,7 +141,6 @@ export default function SettingsPage() {
                 </Card>
             </div>
 
-            {/* Logout Confirmation Modal */}
             <Modal isOpen={logoutModal.isOpen} onClose={logoutModal.onClose}>
                 <ModalContent>
                     <ModalHeader>Sign Out</ModalHeader>
@@ -163,18 +149,13 @@ export default function SettingsPage() {
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="light" onPress={logoutModal.onClose}>Cancel</Button>
-                        <Button
-                            color="danger"
-                            onPress={handleLogout}
-                            isLoading={isLoggingOut}
-                        >
+                        <Button color="danger" onPress={handleLogout} isLoading={isLoggingOut}>
                             Sign Out
                         </Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
 
-            {/* Delete Account Confirmation Modal */}
             <Modal isOpen={deleteModal.isOpen} onClose={deleteModal.onClose}>
                 <ModalContent>
                     <ModalHeader className="text-danger">Delete Account</ModalHeader>
@@ -184,16 +165,12 @@ export default function SettingsPage() {
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="light" onPress={deleteModal.onClose}>Cancel</Button>
-                        <Button
-                            color="danger"
-                            as="a"
-                            href="mailto:support@swipop.app?subject=Delete%20Account%20Request"
-                        >
+                        <Button color="danger" as="a" href="mailto:support@swipop.app?subject=Delete%20Account%20Request">
                             Contact Support
                         </Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
-        </SidebarLayout>
+        </div>
     );
 }

@@ -82,7 +82,7 @@ export type StreamEvent =
     | { type: "done" };
 
 // Import AIModel from layout to avoid duplication
-import type { AIModel } from "@/app/create/layout";
+import type { AIModel } from "@/app/(main)/create/layout";
 
 export interface StreamChatOptions {
     messages: Array<{ role: string; content: string }>;

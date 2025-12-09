@@ -4,7 +4,7 @@ import { Button, ScrollShadow, Textarea, Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageCard, TypingIndicator } from "@/components/ai/MessageCard";
-import { useProjectEditor, AI_MODELS, type HistoryEntry, type Message, type Segment } from "@/app/create/layout";
+import { useProjectEditor, AI_MODELS, type HistoryEntry, type Message, type Segment } from "@/app/(main)/create/layout";
 import { streamChat, type StreamEvent } from "@/lib/ai/service";
 
 const IDEA_SUGGESTIONS = [

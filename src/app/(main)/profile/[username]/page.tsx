@@ -19,7 +19,6 @@ import { Icon } from "@iconify/react";
 
 import Link from "next/link";
 import React from "react";
-import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { InteractionService } from "@/lib/services/interaction";
 import { UserService } from "@/lib/services/user";
@@ -456,21 +455,21 @@ export default function ProfilePage({
 
 	if (loading) {
 		return (
-			<SidebarLayout>
+			<div className="p-4 md:p-6">
 				<div className="flex items-center justify-center min-h-[60vh]">
 					<Spinner size="lg" />
 				</div>
-			</SidebarLayout>
+			</div>
 		);
 	}
 
 	if (!profile) {
 		return (
-			<SidebarLayout>
+			<div className="p-4 md:p-6">
 				<div className="flex items-center justify-center min-h-[60vh]">
 					<p className="text-default-500">User not found</p>
 				</div>
-			</SidebarLayout>
+			</div>
 		);
 	}
 
@@ -503,7 +502,7 @@ export default function ProfilePage({
 	};
 
 	return (
-		<SidebarLayout>
+		<div className="p-4 md:p-6">
 			{/* Follow button for other profiles */}
 			{!isOwnProfile && user && (
 				<div className="flex justify-end mb-4">
@@ -566,6 +565,6 @@ export default function ProfilePage({
 					onSave={handleProfileUpdate}
 				/>
 			)}
-		</SidebarLayout>
+		</div>
 	);
 }

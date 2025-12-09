@@ -2,7 +2,6 @@
 
 import { redirect } from "next/navigation";
 import { SignInPrompt, signInPrompts } from "@/components/auth/SignInPrompt";
-import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { PageLoading } from "@/components/ui/LoadingState";
 import { useAuth } from "@/lib/contexts/AuthContext";
 
@@ -13,21 +12,13 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 export default function ProfilePage() {
     const { user, profile, loading } = useAuth();
 
-    // Show loading state while auth or profile is loading
     if (loading || (user && !profile)) {
-        return <PageLoading />;
+        return <div className="p-4 md:p-6"><PageLoading /></div>;
     }
 
-    // Show sign-in prompt for unauthenticated users
     if (!user) {
-        return (
-            <SidebarLayout>
-                <SignInPrompt {...signInPrompts.profile} />
-            </SidebarLayout>
-        );
+        return <div className="p-4 md:p-6 h-[60vh]"><SignInPrompt {...signInPrompts.profile} /></div>;
     }
 
-    // Redirect to user's profile page (profile is guaranteed to exist here)
     redirect(`/profile/${profile!.username}`);
 }
-

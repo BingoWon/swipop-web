@@ -4,11 +4,10 @@ import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { FeedSection } from "@/components/feed/FeedSection";
-import { SidebarLayout } from "@/components/layout/SidebarLayout";
 
 export default function Home() {
 	return (
-		<SidebarLayout>
+		<div className="p-4 md:p-6">
 			<div className="min-h-screen">
 				{/* Mobile Header - shown only on mobile */}
 				<header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-default-200">
@@ -43,6 +42,6 @@ export default function Home() {
 				{/* Feed - directly showing projects like iOS app */}
 				<FeedSection />
 			</div>
-		</SidebarLayout>
+		</div>
 	);
 }

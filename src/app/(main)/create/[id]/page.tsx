@@ -4,11 +4,11 @@ import { Button } from "@heroui/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useProjectEditor } from "@/app/create/layout";
+import { useProjectEditor } from "@/app/(main)/create/layout";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { PageLoading } from "@/components/ui/LoadingState";
-import CreatePage from "@/app/create/page";
+import CreatePage from "@/app/(main)/create/page";
 import type { Project } from "@/lib/types";
 
 /**

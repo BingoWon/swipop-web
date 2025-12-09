@@ -3,7 +3,7 @@
 import { Avatar, Card, CardBody, cn } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useState, useEffect } from "react";
-import { type Message, type Segment } from "@/app/create/layout";
+import { type Message, type Segment } from "@/app/(main)/create/layout";
 
 // Constants
 const AI_AVATAR_URL = "https://nextuipro.nyc3.cdn.digitaloceanspaces.com/components-images/avatar_ai.png";

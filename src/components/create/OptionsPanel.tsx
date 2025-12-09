@@ -3,7 +3,7 @@
 import { Button, Card, CardBody, Chip, Input, Progress, Radio, RadioGroup, Switch, Textarea } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useProjectEditor, AI_MODELS, type AIModel } from "@/app/create/layout";
+import { useProjectEditor, AI_MODELS, type AIModel } from "@/app/(main)/create/layout";
 import { ASPECT_RATIOS, MAX_FILE_SIZE, type ThumbnailAspectRatio } from "@/lib/services/thumbnail";
 
 const CONTEXT_LIMIT = 128_000;

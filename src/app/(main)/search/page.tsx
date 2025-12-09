@@ -3,7 +3,6 @@
 import { Button, Input, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import React from "react";
-import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { ProjectCard } from "@/components/project/ProjectCard";
 import { createClient } from "@/lib/supabase/client";
 import type { Project } from "@/lib/types";
@@ -54,7 +53,7 @@ export default function SearchPage() {
 	};
 
 	return (
-		<SidebarLayout>
+		<div className="p-4 md:p-6">
 			<div className="max-w-4xl mx-auto">
 				{/* Search Header */}
 				<div className="mb-8">
@@ -138,6 +137,6 @@ export default function SearchPage() {
 					</div>
 				)}
 			</div>
-		</SidebarLayout>
+		</div>
 	);
 }

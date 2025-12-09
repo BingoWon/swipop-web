@@ -14,7 +14,6 @@ import { Icon } from "@iconify/react";
 import Link from "next/link";
 import React, { type Key } from "react";
 import { CodeBlock } from "@/components/editor/CodeBlock";
-import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { CommentService } from "@/lib/services/comment";
 import { InteractionService } from "@/lib/services/interaction";
@@ -132,21 +131,21 @@ export default function ProjectPage({
 
 	if (loading) {
 		return (
-			<SidebarLayout>
-				<div className="flex items-center justify-center h-screen">
+			<div className="p-4 md:p-6">
+				<div className="flex items-center justify-center h-[80vh]">
 					<Spinner size="lg" />
 				</div>
-			</SidebarLayout>
+			</div>
 		);
 	}
 
 	if (!project) {
 		return (
-			<SidebarLayout>
-				<div className="flex items-center justify-center h-screen">
+			<div className="p-4 md:p-6">
+				<div className="flex items-center justify-center h-[80vh]">
 					<p className="text-default-500">Project not found</p>
 				</div>
-			</SidebarLayout>
+			</div>
 		);
 	}
 
@@ -157,8 +156,8 @@ export default function ProjectPage({
 		project.creator?.display_name?.[0] || project.creator?.username?.[0] || "U";
 
 	return (
-		<SidebarLayout>
-			<div className="flex flex-col lg:flex-row h-[calc(100vh-32px)] md:h-[calc(100vh-48px)] gap-4 lg:gap-6">
+		<div className="p-4 md:p-6">
+			<div className="flex flex-col lg:flex-row h-[calc(100vh-80px)] gap-4 lg:gap-6">
 				{/* Left: Preview */}
 				<div className="flex-1 bg-black rounded-large overflow-hidden min-h-[300px] lg:min-h-0">
 					<iframe
@@ -402,7 +401,7 @@ export default function ProjectPage({
 					</div>
 				</div>
 			</div>
-		</SidebarLayout>
+		</div>
 	);
 }
 
