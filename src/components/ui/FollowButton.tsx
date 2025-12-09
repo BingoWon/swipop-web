@@ -15,7 +15,7 @@ export function FollowButton({ isFollowing, onPress, className }: FollowButtonPr
             color={isFollowing ? "default" : "primary"}
             variant={isFollowing ? "bordered" : "solid"}
             onPress={onPress}
-            className={`shrink-0 ${className || ""}`}
+            className={className ? `shrink-0 ${className}` : "shrink-0"}
         >
             {isFollowing ? "Following" : "Follow"}
         </Button>

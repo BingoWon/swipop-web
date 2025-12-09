@@ -50,6 +50,15 @@ export function EditProfileModal({ profile, isOpen, onClose, onSave }: EditProfi
         }
     }, [isOpen, profile]);
 
+    // Cleanup blob URL on unmount to prevent memory leak
+    React.useEffect(() => {
+        return () => {
+            if (avatarPreview?.startsWith("blob:")) {
+                URL.revokeObjectURL(avatarPreview);
+            }
+        };
+    }, [avatarPreview]);
+
     const handleAddLink = () => setLinks([...links, { title: "", url: "" }]);
     const handleRemoveLink = (index: number) => setLinks(links.filter((_, i) => i !== index));
     const handleLinkChange = (index: number, field: keyof ProfileLink, value: string) => {
