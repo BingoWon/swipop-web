@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
 import { Avatar, Card, cn } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { type Message, type Segment } from "@/app/(main)/create/layout";
+import type React from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { Message, Segment } from "@/app/(main)/create/layout";
 
 // Constants
-const AI_AVATAR_URL = "https://nextuipro.nyc3.cdn.digitaloceanspaces.com/components-images/avatar_ai.png";
+const AI_AVATAR_URL =
+	"https://nextuipro.nyc3.cdn.digitaloceanspaces.com/components-images/avatar_ai.png";
 
 // Tool icons matching iOS ToolCallView.swift
 const TOOL_ICONS: Record<string, string> = {
@@ -32,13 +34,35 @@ export function MessageCard({ message }: MessageCardProps) {
 
 	return (
 		<div className={cn("flex gap-3", isUser && "flex-row-reverse")}>
-			{!isUser && <Avatar src={AI_AVATAR_URL} showFallback name="AI" size="sm" className="shrink-0" />}
+			{!isUser && (
+				<Avatar
+					src={AI_AVATAR_URL}
+					showFallback
+					name="AI"
+					size="sm"
+					className="shrink-0"
+				/>
+			)}
 
-			<div className={cn("flex flex-col gap-2", isUser ? "items-end" : "items-start")}>
-				{message.segments.map((segment, i) => renderSegment(segment, i, isUser))}
+			<div
+				className={cn(
+					"flex flex-col gap-2",
+					isUser ? "items-end" : "items-start",
+				)}
+			>
+				{message.segments.map((segment, i) =>
+					renderSegment(segment, i, isUser),
+				)}
 			</div>
 
-			{isUser && <Avatar showFallback name="U" size="sm" className="shrink-0 bg-primary" />}
+			{isUser && (
+				<Avatar
+					showFallback
+					name="U"
+					size="sm"
+					className="shrink-0 bg-primary"
+				/>
+			)}
 		</div>
 	);
 }
@@ -48,7 +72,13 @@ function renderSegment(segment: Segment, index: number, isUser: boolean) {
 		case "text":
 			if (!segment.content) return null;
 			return (
-				<div key={index} className={cn("rounded-medium px-4 py-3", isUser ? "bg-primary text-primary-foreground" : "bg-content2")}>
+				<div
+					key={index}
+					className={cn(
+						"rounded-medium px-4 py-3",
+						isUser ? "bg-primary text-primary-foreground" : "bg-content2",
+					)}
+				>
 					{isUser ? (
 						<p className="text-small whitespace-pre-wrap">{segment.content}</p>
 					) : (
@@ -58,7 +88,14 @@ function renderSegment(segment: Segment, index: number, isUser: boolean) {
 			);
 
 		case "thinking":
-			return <ThinkingSegment key={index} text={segment.content} isActive={segment.isActive} startTime={segment.startTime} />;
+			return (
+				<ThinkingSegment
+					key={index}
+					text={segment.content}
+					isActive={segment.isActive}
+					startTime={segment.startTime}
+				/>
+			);
 
 		case "tool_call":
 			return <ToolCallSegment key={segment.id} segment={segment} />;
@@ -82,9 +119,8 @@ function parseContentBlocks(content: string): ContentBlock[] {
 	const blocks: ContentBlock[] = [];
 	const codeBlockRegex = /```(\w*)\n?([\s\S]*?)```/g;
 	let lastEnd = 0;
-	let match;
 
-	while ((match = codeBlockRegex.exec(content)) !== null) {
+	for (const match of content.matchAll(codeBlockRegex)) {
 		// Text before code block
 		if (match.index > lastEnd) {
 			const text = content.slice(lastEnd, match.index).trim();
@@ -92,7 +128,12 @@ function parseContentBlocks(content: string): ContentBlock[] {
 		}
 		// Code block
 		const code = match[2].trim();
-		if (code) blocks.push({ type: "code", content: code, language: match[1] || undefined });
+		if (code)
+			blocks.push({
+				type: "code",
+				content: code,
+				language: match[1] || undefined,
+			});
 		lastEnd = match.index + match[0].length;
 	}
 
@@ -118,7 +159,7 @@ function RichTextContent({ content }: { content: string }) {
 					<CodeBlock key={i} code={block.content} language={block.language} />
 				) : (
 					<MarkdownText key={i} content={block.content} />
-				)
+				),
 			)}
 		</div>
 	);
@@ -131,10 +172,9 @@ function MarkdownText({ content }: { content: string }) {
 		// Regex for: **bold**, *italic*, `code`
 		const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/g;
 		let lastIndex = 0;
-		let match;
 		let keyIdx = 0;
 
-		while ((match = regex.exec(content)) !== null) {
+		for (const match of content.matchAll(regex)) {
 			// Add text before match
 			if (match.index > lastIndex) {
 				parts.push(content.slice(lastIndex, match.index));
@@ -142,16 +182,23 @@ function MarkdownText({ content }: { content: string }) {
 			// Determine type
 			if (match[2]) {
 				// **bold**
-				parts.push(<strong key={keyIdx++} className="font-semibold">{match[2]}</strong>);
+				parts.push(
+					<strong key={keyIdx++} className="font-semibold">
+						{match[2]}
+					</strong>,
+				);
 			} else if (match[3]) {
 				// *italic*
 				parts.push(<em key={keyIdx++}>{match[3]}</em>);
 			} else if (match[4]) {
 				// `code`
 				parts.push(
-					<code key={keyIdx++} className="px-1 py-0.5 rounded bg-default-200 font-mono text-[0.85em]">
+					<code
+						key={keyIdx++}
+						className="px-1 py-0.5 rounded bg-default-200 font-mono text-[0.85em]"
+					>
 						{match[4]}
-					</code>
+					</code>,
 				);
 			}
 			lastIndex = match.index + match[0].length;
@@ -179,13 +226,24 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
 		<div className="rounded-lg overflow-hidden border border-divider bg-content2/50">
 			{language && (
 				<div className="flex items-center justify-between px-3 py-1.5 bg-content2 border-b border-divider">
-					<span className="text-tiny font-mono text-default-500 uppercase">{language}</span>
-					<button onClick={handleCopy} className="text-default-400 hover:text-foreground transition-colors">
-						<Icon icon={copied ? "solar:check-circle-bold" : "solar:copy-bold"} className="text-sm" />
+					<span className="text-tiny font-mono text-default-500 uppercase">
+						{language}
+					</span>
+					<button
+						type="button"
+						onClick={handleCopy}
+						className="text-default-400 hover:text-foreground transition-colors"
+					>
+						<Icon
+							icon={copied ? "solar:check-circle-bold" : "solar:copy-bold"}
+							className="text-sm"
+						/>
 					</button>
 				</div>
 			)}
-			<pre className="px-3 py-2 text-tiny font-mono overflow-x-auto whitespace-pre-wrap text-foreground/90">{code}</pre>
+			<pre className="px-3 py-2 text-tiny font-mono overflow-x-auto whitespace-pre-wrap text-foreground/90">
+				{code}
+			</pre>
 		</div>
 	);
 }
@@ -210,7 +268,9 @@ function ToolCallSegment({ segment }: ToolCallSegmentProps) {
 		<Card
 			className={cn(
 				"border overflow-hidden",
-				isComplete ? "border-success/30 bg-content2" : "border-warning/40 bg-content2",
+				isComplete
+					? "border-success/30 bg-content2"
+					: "border-warning/40 bg-content2",
 			)}
 			isPressable={hasContent}
 			onPress={() => hasContent && setIsExpanded(!isExpanded)}
@@ -218,7 +278,10 @@ function ToolCallSegment({ segment }: ToolCallSegmentProps) {
 			<div className="flex items-center gap-2 px-3 py-2.5 shrink-0">
 				<Icon
 					icon={icon}
-					className={cn("text-base shrink-0", isStreaming ? "text-warning" : "text-success")}
+					className={cn(
+						"text-base shrink-0",
+						isStreaming ? "text-warning" : "text-success",
+					)}
 				/>
 				<span className="text-small font-medium whitespace-nowrap shrink-0">
 					{isStreaming ? `Calling ${name}...` : `Called ${name}`}
@@ -229,7 +292,10 @@ function ToolCallSegment({ segment }: ToolCallSegmentProps) {
 				{hasContent && (
 					<Icon
 						icon="solar:alt-arrow-right-linear"
-						className={cn("text-default-400 ml-auto shrink-0 transition-transform", isExpanded && "rotate-90")}
+						className={cn(
+							"text-default-400 ml-auto shrink-0 transition-transform",
+							isExpanded && "rotate-90",
+						)}
 					/>
 				)}
 			</div>
@@ -237,13 +303,19 @@ function ToolCallSegment({ segment }: ToolCallSegmentProps) {
 			{isExpanded && hasContent && (
 				<>
 					<div className="border-t border-divider px-3 py-2 text-left">
-						<p className="text-tiny text-default-500 mb-1">{isStreaming ? "Arguments (streaming...)" : "Arguments"}</p>
-						<pre className="text-tiny font-mono text-foreground/80 whitespace-pre-wrap max-h-[200px] overflow-auto">{args}</pre>
+						<p className="text-tiny text-default-500 mb-1">
+							{isStreaming ? "Arguments (streaming...)" : "Arguments"}
+						</p>
+						<pre className="text-tiny font-mono text-foreground/80 whitespace-pre-wrap max-h-[200px] overflow-auto">
+							{args}
+						</pre>
 					</div>
 					{result && (
 						<div className="border-t border-divider px-3 py-2 text-left">
 							<p className="text-tiny text-default-500 mb-1">Result</p>
-							<pre className="text-tiny font-mono text-success whitespace-pre-wrap">{result}</pre>
+							<pre className="text-tiny font-mono text-success whitespace-pre-wrap">
+								{result}
+							</pre>
 						</div>
 					)}
 				</>
@@ -264,11 +336,14 @@ interface ThinkingSegmentProps {
 
 function ThinkingSegment({ text, isActive, startTime }: ThinkingSegmentProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
-	const [elapsed, setElapsed] = useState(() => startTime > 0 ? Math.floor((Date.now() - startTime) / 1000) : 0);
+	const [elapsed, setElapsed] = useState(() =>
+		startTime > 0 ? Math.floor((Date.now() - startTime) / 1000) : 0,
+	);
 
 	useEffect(() => {
 		if (!isActive || startTime === 0) return;
-		const update = () => setElapsed(Math.floor((Date.now() - startTime) / 1000));
+		const update = () =>
+			setElapsed(Math.floor((Date.now() - startTime) / 1000));
 		update();
 		const id = setInterval(update, 1000);
 		return () => clearInterval(id);
@@ -276,21 +351,46 @@ function ThinkingSegment({ text, isActive, startTime }: ThinkingSegmentProps) {
 
 	return (
 		<Card
-			className={cn("cursor-pointer transition-colors border", isActive ? "bg-primary/10 border-primary/30" : "bg-content2/50 border-divider")}
+			className={cn(
+				"cursor-pointer transition-colors border",
+				isActive
+					? "bg-primary/10 border-primary/30"
+					: "bg-content2/50 border-divider",
+			)}
 			isPressable={!!text}
 			onPress={() => text && setIsExpanded(!isExpanded)}
 		>
 			<div className="flex items-center gap-2 px-3 py-2.5">
-				<Icon icon="solar:brain-bold" className={cn("text-base shrink-0", isActive ? "text-primary animate-pulse" : "text-primary/80")} />
+				<Icon
+					icon="solar:brain-bold"
+					className={cn(
+						"text-base shrink-0",
+						isActive ? "text-primary animate-pulse" : "text-primary/80",
+					)}
+				/>
 				<span className="text-small font-medium whitespace-nowrap">
-					{isActive ? `Thinking ${elapsed}s` : (startTime > 0 ? `Thought for ${elapsed}s` : "Thought")}
+					{isActive
+						? `Thinking ${elapsed}s`
+						: startTime > 0
+							? `Thought for ${elapsed}s`
+							: "Thought"}
 				</span>
 				{isActive && <ShimmerBar />}
-				{text && <Icon icon="solar:alt-arrow-right-linear" className={cn("text-default-400 ml-auto shrink-0 transition-transform", isExpanded && "rotate-90")} />}
+				{text && (
+					<Icon
+						icon="solar:alt-arrow-right-linear"
+						className={cn(
+							"text-default-400 ml-auto shrink-0 transition-transform",
+							isExpanded && "rotate-90",
+						)}
+					/>
+				)}
 			</div>
 			{isExpanded && text && (
 				<div className="border-t border-divider px-3 py-2 text-left">
-					<p className="text-tiny text-default-500 whitespace-pre-wrap max-h-[200px] overflow-auto">{text}</p>
+					<p className="text-tiny text-default-500 whitespace-pre-wrap max-h-[200px] overflow-auto">
+						{text}
+					</p>
 				</div>
 			)}
 		</Card>
@@ -312,7 +412,11 @@ export function TypingIndicator() {
 			<div className="rounded-medium bg-content2 px-4 py-3 animate-pulse">
 				<div className="flex gap-1">
 					{[0, 150, 300].map((delay) => (
-						<span key={delay} className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
+						<span
+							key={delay}
+							className="w-2 h-2 bg-primary rounded-full animate-bounce"
+							style={{ animationDelay: `${delay}ms` }}
+						/>
 					))}
 				</div>
 			</div>

@@ -15,9 +15,20 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 import { useProfileStore } from "@/lib/stores/profile";
 import type { Profile } from "@/lib/types";
 
-export default function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
+export default function ProfilePage({
+	params,
+}: {
+	params: Promise<{ username: string }>;
+}) {
 	const { user, refreshProfile } = useAuth();
-	const { profiles, loadingUsername, error, loadProfile, updateProfile, toggleFollow } = useProfileStore();
+	const {
+		profiles,
+		loadingUsername,
+		error,
+		loadProfile,
+		updateProfile,
+		toggleFollow,
+	} = useProfileStore();
 	const [selectedTab, setSelectedTab] = React.useState("projects");
 	const [username, setUsername] = React.useState<string | null>(null);
 	const editModal = useDisclosure();
@@ -57,7 +68,16 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
 		);
 	}
 
-	const { profile, projects, likedProjects, collectedProjects, isFollowing, followerCount, followingCount, likeCount } = profileData;
+	const {
+		profile,
+		projects,
+		likedProjects,
+		collectedProjects,
+		isFollowing,
+		followerCount,
+		followingCount,
+		likeCount,
+	} = profileData;
 	const isOwnProfile = user?.id === profile.id;
 
 	const handleFollow = () => {
@@ -73,21 +93,37 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
 		switch (selectedTab) {
 			case "projects":
 				return projects.length > 0 ? (
-					<ProfileProjectGrid projects={projects} showDraftBadges={isOwnProfile} isOwnProfile={isOwnProfile} />
+					<ProfileProjectGrid
+						projects={projects}
+						showDraftBadges={isOwnProfile}
+						isOwnProfile={isOwnProfile}
+					/>
 				) : (
-					<EmptyState icon="solar:code-bold" message="No projects created yet" />
+					<EmptyState
+						icon="solar:code-bold"
+						message="No projects created yet"
+					/>
 				);
 			case "likes":
 				return likedProjects.length > 0 ? (
-					<ProfileProjectGrid projects={likedProjects} isOwnProfile={isOwnProfile} />
+					<ProfileProjectGrid
+						projects={likedProjects}
+						isOwnProfile={isOwnProfile}
+					/>
 				) : (
 					<EmptyState icon="solar:heart-bold" message="No liked projects yet" />
 				);
 			case "collected":
 				return collectedProjects.length > 0 ? (
-					<ProfileProjectGrid projects={collectedProjects} isOwnProfile={isOwnProfile} />
+					<ProfileProjectGrid
+						projects={collectedProjects}
+						isOwnProfile={isOwnProfile}
+					/>
 				) : (
-					<EmptyState icon="solar:bookmark-bold" message="No saved projects yet" />
+					<EmptyState
+						icon="solar:bookmark-bold"
+						message="No saved projects yet"
+					/>
 				);
 			default:
 				return null;
@@ -127,9 +163,18 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
 						cursor: "bg-primary",
 					}}
 				>
-					<Tab key="projects" title={<Icon icon="solar:widget-2-bold" className="text-xl" />} />
-					<Tab key="likes" title={<Icon icon="solar:heart-bold" className="text-xl" />} />
-					<Tab key="collected" title={<Icon icon="solar:bookmark-bold" className="text-xl" />} />
+					<Tab
+						key="projects"
+						title={<Icon icon="solar:widget-2-bold" className="text-xl" />}
+					/>
+					<Tab
+						key="likes"
+						title={<Icon icon="solar:heart-bold" className="text-xl" />}
+					/>
+					<Tab
+						key="collected"
+						title={<Icon icon="solar:bookmark-bold" className="text-xl" />}
+					/>
 				</Tabs>
 			</div>
 

@@ -7,9 +7,9 @@ import { SidebarLayout } from "@/components/layout/SidebarLayout";
  * This layout persists across navigation, preventing sidebar remounts.
  */
 export default function MainLayout({
-    children,
+	children,
 }: {
-    children: React.ReactNode;
+	children: React.ReactNode;
 }) {
-    return <SidebarLayout>{children}</SidebarLayout>;
+	return <SidebarLayout>{children}</SidebarLayout>;
 }

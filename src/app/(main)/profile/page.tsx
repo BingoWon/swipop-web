@@ -10,15 +10,15 @@ import { useAuth } from "@/lib/contexts/AuthContext";
  * redirects to user's profile page when authenticated
  */
 export default function ProfilePage() {
-    const { user, profile, loading } = useAuth();
+	const { user, profile, loading } = useAuth();
 
-    if (loading || (user && !profile)) {
-        return <PageLoading />;
-    }
+	if (loading || (user && !profile)) {
+		return <PageLoading />;
+	}
 
-    if (!user) {
-        return <SignInPrompt {...signInPrompts.profile} />;
-    }
+	if (!user) {
+		return <SignInPrompt {...signInPrompts.profile} />;
+	}
 
-    redirect(`/profile/${profile!.username}`);
+	redirect(`/profile/${profile!.username}`);
 }

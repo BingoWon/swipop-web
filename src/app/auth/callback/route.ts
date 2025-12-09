@@ -10,17 +10,24 @@ export async function GET(request: Request) {
 	// If there's an error from OAuth provider, redirect with error info
 	if (error) {
 		return NextResponse.redirect(
-			new URL(`/?auth_error=${encodeURIComponent(error)}&error_description=${encodeURIComponent(errorDescription || "")}`, requestUrl.origin)
+			new URL(
+				`/?auth_error=${encodeURIComponent(error)}&error_description=${encodeURIComponent(errorDescription || "")}`,
+				requestUrl.origin,
+			),
 		);
 	}
 
 	if (code) {
 		const supabase = await createClient();
-		const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+		const { error: exchangeError } =
+			await supabase.auth.exchangeCodeForSession(code);
 
 		if (exchangeError) {
 			return NextResponse.redirect(
-				new URL(`/?auth_error=exchange_failed&error_description=${encodeURIComponent(exchangeError.message)}`, requestUrl.origin)
+				new URL(
+					`/?auth_error=exchange_failed&error_description=${encodeURIComponent(exchangeError.message)}`,
+					requestUrl.origin,
+				),
 			);
 		}
 	}

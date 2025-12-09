@@ -242,8 +242,9 @@ export default function ProjectPage({
 											@{project.creator?.username}
 										</p>
 									</div>
-									{user && project.creator && (
-										user.id === project.creator.id ? (
+									{user &&
+										project.creator &&
+										(user.id === project.creator.id ? (
 											<Button
 												as={Link}
 												href={`/create/${project.id}`}
@@ -263,8 +264,7 @@ export default function ProjectPage({
 											>
 												{isFollowing ? "Following" : "Follow"}
 											</Button>
-										)
-									)}
+										))}
 								</div>
 
 								{/* Title & Description */}

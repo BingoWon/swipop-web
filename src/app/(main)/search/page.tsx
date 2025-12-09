@@ -64,10 +64,7 @@ export default function SearchPage() {
 						onKeyDown={(e) => e.key === "Enter" && handleSearch()}
 						size="lg"
 						startContent={
-							<Icon
-								icon="solar:magnifer-linear"
-								className="text-default-400"
-							/>
+							<Icon icon="solar:magnifer-linear" className="text-default-400" />
 						}
 						endContent={
 							query && (

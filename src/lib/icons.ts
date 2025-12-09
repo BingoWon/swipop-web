@@ -15,12 +15,12 @@ import { iconData } from "./icons-data";
  * Icons are immediately available after this function runs.
  */
 export function setupIcons(): void {
-    for (const [name, data] of Object.entries(iconData.icons)) {
-        const [prefix, iconName] = name.split(":");
-        addIcon(name, {
-            body: data.body,
-            width: data.width,
-            height: data.height,
-        });
-    }
+	for (const [name, data] of Object.entries(iconData.icons)) {
+		const [_prefix, _iconName] = name.split(":");
+		addIcon(name, {
+			body: data.body,
+			width: data.width,
+			height: data.height,
+		});
+	}
 }

@@ -3,57 +3,57 @@
  * Caches activities to avoid refetching on navigation
  */
 import { create } from "zustand";
-import { createClient } from "@/lib/supabase/client";
 import { ActivityService } from "@/lib/services/activity";
+import { createClient } from "@/lib/supabase/client";
 import type { Activity, Profile, Project } from "@/lib/types";
 
 type ActivityWithRelations = Activity & {
-    actor?: Profile;
-    project?: Project;
+	actor?: Profile;
+	project?: Project;
 };
 
 interface InboxStore {
-    // State
-    activities: ActivityWithRelations[];
-    isLoading: boolean;
-    error: string | null;
-    hasInitialLoad: boolean;
+	// State
+	activities: ActivityWithRelations[];
+	isLoading: boolean;
+	error: string | null;
+	hasInitialLoad: boolean;
 
-    // Computed
-    unreadCount: () => number;
+	// Computed
+	unreadCount: () => number;
 
-    // Actions
-    loadInitial: (userId: string) => Promise<void>;
-    refresh: (userId: string) => Promise<void>;
-    markAsRead: (activityId: string) => Promise<void>;
-    markAllAsRead: (userId: string) => Promise<void>;
-    reset: () => void;
+	// Actions
+	loadInitial: (userId: string) => Promise<void>;
+	refresh: (userId: string) => Promise<void>;
+	markAsRead: (activityId: string) => Promise<void>;
+	markAllAsRead: (userId: string) => Promise<void>;
+	reset: () => void;
 }
 
 export const useInboxStore = create<InboxStore>((set, get) => ({
-    activities: [],
-    isLoading: false,
-    error: null,
-    hasInitialLoad: false,
+	activities: [],
+	isLoading: false,
+	error: null,
+	hasInitialLoad: false,
 
-    unreadCount: () => get().activities.filter((a) => !a.is_read).length,
+	unreadCount: () => get().activities.filter((a) => !a.is_read).length,
 
-    loadInitial: async (userId) => {
-        if (get().hasInitialLoad) return;
-        set({ hasInitialLoad: true });
-        await get().refresh(userId);
-    },
+	loadInitial: async (userId) => {
+		if (get().hasInitialLoad) return;
+		set({ hasInitialLoad: true });
+		await get().refresh(userId);
+	},
 
-    refresh: async (userId) => {
-        if (get().isLoading) return;
+	refresh: async (userId) => {
+		if (get().isLoading) return;
 
-        set({ isLoading: true, error: null });
+		set({ isLoading: true, error: null });
 
-        try {
-            const supabase = createClient();
-            const { data, error } = await supabase
-                .from("activities")
-                .select(`
+		try {
+			const supabase = createClient();
+			const { data, error } = await supabase
+				.from("activities")
+				.select(`
                     *,
                     actor:users!activities_actor_id_fkey (
                         id,
@@ -66,44 +66,44 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
                         title
                     )
                 `)
-                .eq("user_id", userId)
-                .order("created_at", { ascending: false })
-                .limit(50);
+				.eq("user_id", userId)
+				.order("created_at", { ascending: false })
+				.limit(50);
 
-            if (error) {
-                set({ error: error.message, isLoading: false });
-                return;
-            }
+			if (error) {
+				set({ error: error.message, isLoading: false });
+				return;
+			}
 
-            set({ activities: data || [], isLoading: false });
-        } catch (err) {
-            console.error("Inbox fetch error:", err);
-            set({ error: "Failed to load notifications", isLoading: false });
-        }
-    },
+			set({ activities: data || [], isLoading: false });
+		} catch (err) {
+			console.error("Inbox fetch error:", err);
+			set({ error: "Failed to load notifications", isLoading: false });
+		}
+	},
 
-    markAsRead: async (activityId) => {
-        await ActivityService.markAsRead(activityId);
-        set((state) => ({
-            activities: state.activities.map((a) =>
-                a.id === activityId ? { ...a, is_read: true } : a
-            ),
-        }));
-    },
+	markAsRead: async (activityId) => {
+		await ActivityService.markAsRead(activityId);
+		set((state) => ({
+			activities: state.activities.map((a) =>
+				a.id === activityId ? { ...a, is_read: true } : a,
+			),
+		}));
+	},
 
-    markAllAsRead: async (userId) => {
-        await ActivityService.markAllAsRead(userId);
-        set((state) => ({
-            activities: state.activities.map((a) => ({ ...a, is_read: true })),
-        }));
-    },
+	markAllAsRead: async (userId) => {
+		await ActivityService.markAllAsRead(userId);
+		set((state) => ({
+			activities: state.activities.map((a) => ({ ...a, is_read: true })),
+		}));
+	},
 
-    reset: () => {
-        set({
-            activities: [],
-            isLoading: false,
-            error: null,
-            hasInitialLoad: false,
-        });
-    },
+	reset: () => {
+		set({
+			activities: [],
+			isLoading: false,
+			error: null,
+			hasInitialLoad: false,
+		});
+	},
 }));

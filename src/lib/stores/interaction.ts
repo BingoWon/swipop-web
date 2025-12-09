@@ -3,109 +3,109 @@ import { persist } from "zustand/middleware";
 import { InteractionService } from "@/lib/services/interaction";
 
 interface InteractionState {
-    isLiked: boolean;
-    likeCount: number;
+	isLiked: boolean;
+	likeCount: number;
 }
 
 interface InteractionStore {
-    states: Record<string, InteractionState>;
+	states: Record<string, InteractionState>;
 
-    // Read state
-    isLiked: (projectId: string) => boolean;
-    likeCount: (projectId: string) => number;
+	// Read state
+	isLiked: (projectId: string) => boolean;
+	likeCount: (projectId: string) => number;
 
-    // Update from server data
-    updateFromProjects: (
-        projects: Array<{ id: string; like_count: number }>,
-    ) => void;
+	// Update from server data
+	updateFromProjects: (
+		projects: Array<{ id: string; like_count: number }>,
+	) => void;
 
-    // Set liked projects (hydrate from server)
-    setLikedProjects: (projectIds: string[]) => void;
+	// Set liked projects (hydrate from server)
+	setLikedProjects: (projectIds: string[]) => void;
 
-    // Toggle like with optimistic update
-    toggleLike: (projectId: string, userId: string) => Promise<void>;
+	// Toggle like with optimistic update
+	toggleLike: (projectId: string, userId: string) => Promise<void>;
 
-    // Reset on logout
-    reset: () => void;
+	// Reset on logout
+	reset: () => void;
 }
 
 export const useInteractionStore = create<InteractionStore>()(
-    persist(
-        (set, get) => ({
-            states: {},
+	persist(
+		(set, get) => ({
+			states: {},
 
-            isLiked: (projectId) => get().states[projectId]?.isLiked ?? false,
+			isLiked: (projectId) => get().states[projectId]?.isLiked ?? false,
 
-            likeCount: (projectId) => get().states[projectId]?.likeCount ?? 0,
+			likeCount: (projectId) => get().states[projectId]?.likeCount ?? 0,
 
-            updateFromProjects: (projects) => {
-                set((state) => {
-                    const newStates = { ...state.states };
-                    for (const project of projects) {
-                        newStates[project.id] = {
-                            isLiked: newStates[project.id]?.isLiked ?? false,
-                            likeCount: project.like_count,
-                        };
-                    }
-                    return { states: newStates };
-                });
-            },
+			updateFromProjects: (projects) => {
+				set((state) => {
+					const newStates = { ...state.states };
+					for (const project of projects) {
+						newStates[project.id] = {
+							isLiked: newStates[project.id]?.isLiked ?? false,
+							likeCount: project.like_count,
+						};
+					}
+					return { states: newStates };
+				});
+			},
 
-            setLikedProjects: (projectIds) => {
-                set((state) => {
-                    const newStates = { ...state.states };
-                    for (const id of projectIds) {
-                        newStates[id] = {
-                            isLiked: true,
-                            likeCount: newStates[id]?.likeCount ?? 0,
-                        };
-                    }
-                    return { states: newStates };
-                });
-            },
+			setLikedProjects: (projectIds) => {
+				set((state) => {
+					const newStates = { ...state.states };
+					for (const id of projectIds) {
+						newStates[id] = {
+							isLiked: true,
+							likeCount: newStates[id]?.likeCount ?? 0,
+						};
+					}
+					return { states: newStates };
+				});
+			},
 
-            toggleLike: async (projectId, userId) => {
-                const current = get().states[projectId];
-                const wasLiked = current?.isLiked ?? false;
-                const oldCount = current?.likeCount ?? 0;
+			toggleLike: async (projectId, userId) => {
+				const current = get().states[projectId];
+				const wasLiked = current?.isLiked ?? false;
+				const oldCount = current?.likeCount ?? 0;
 
-                // Optimistic update
-                set((state) => ({
-                    states: {
-                        ...state.states,
-                        [projectId]: {
-                            isLiked: !wasLiked,
-                            likeCount: wasLiked ? oldCount - 1 : oldCount + 1,
-                        },
-                    },
-                }));
+				// Optimistic update
+				set((state) => ({
+					states: {
+						...state.states,
+						[projectId]: {
+							isLiked: !wasLiked,
+							likeCount: wasLiked ? oldCount - 1 : oldCount + 1,
+						},
+					},
+				}));
 
-                try {
-                    await InteractionService.toggleLike(projectId, userId);
-                } catch (error) {
-                    // Rollback on error
-                    set((state) => ({
-                        states: {
-                            ...state.states,
-                            [projectId]: {
-                                isLiked: wasLiked,
-                                likeCount: oldCount,
-                            },
-                        },
-                    }));
-                    console.error("Failed to toggle like:", error);
-                }
-            },
+				try {
+					await InteractionService.toggleLike(projectId, userId);
+				} catch (error) {
+					// Rollback on error
+					set((state) => ({
+						states: {
+							...state.states,
+							[projectId]: {
+								isLiked: wasLiked,
+								likeCount: oldCount,
+							},
+						},
+					}));
+					console.error("Failed to toggle like:", error);
+				}
+			},
 
-            reset: () => set({ states: {} }),
-        }),
-        {
-            name: "swipop-interactions",
-            partialize: (state) => ({
-                states: Object.fromEntries(
-                    Object.entries(state.states).filter(([, v]) => v.isLiked),
-                ),
-            }),
-        },
-    ),
+			reset: () => set({ states: {} }),
+		}),
+		{
+			name: "swipop-interactions",
+			partialize: (state) => ({
+				states: Object.fromEntries(
+					Object.entries(state.states).filter(([, v]) => v.isLiked),
+				),
+			}),
+		},
+	),
 );

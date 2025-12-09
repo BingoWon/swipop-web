@@ -1,14 +1,11 @@
 "use client";
 
-import { EditorState, type Extension } from "@codemirror/state";
-import {
-	EditorView,
-	placeholder as placeholderExt,
-} from "@codemirror/view";
-import { oneDark } from "@codemirror/theme-one-dark";
-import { html } from "@codemirror/lang-html";
 import { css } from "@codemirror/lang-css";
+import { html } from "@codemirror/lang-html";
 import { javascript } from "@codemirror/lang-javascript";
+import { EditorState, type Extension } from "@codemirror/state";
+import { oneDark } from "@codemirror/theme-one-dark";
+import { EditorView, placeholder as placeholderExt } from "@codemirror/view";
 import { useEffect, useRef } from "react";
 
 type Language = "html" | "css" | "javascript" | "HTML" | "CSS" | "JavaScript";
@@ -102,7 +99,7 @@ export function CodeEditor({
 			view.destroy();
 			viewRef.current = null;
 		};
-	}, [langKey, placeholder]);
+	}, [langKey, placeholder, value]);
 
 	useEffect(() => {
 		const view = viewRef.current;
@@ -120,7 +117,5 @@ export function CodeEditor({
 		}
 	}, [value]);
 
-	return (
-		<div ref={editorRef} className="h-full overflow-auto bg-[#282c34]" />
-	);
+	return <div ref={editorRef} className="h-full overflow-auto bg-[#282c34]" />;
 }

@@ -40,13 +40,13 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
 	const itemsWithBadge = sidebarItems.map((item) =>
 		item.key === "inbox" && unreadCount > 0
 			? {
-				...item,
-				endContent: (
-					<span className="bg-primary text-primary-foreground text-tiny px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
-						{unreadCount}
-					</span>
-				),
-			}
+					...item,
+					endContent: (
+						<span className="bg-primary text-primary-foreground text-tiny px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+							{unreadCount}
+						</span>
+					),
+				}
 			: item,
 	);
 
@@ -136,8 +136,8 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
 					<ThemeToggle />
 				</div>
 
-				{!loading && (
-					user ? (
+				{!loading &&
+					(user ? (
 						<Button
 							fullWidth={!isCompact}
 							className="text-default-500 data-[hover=true]:text-foreground justify-start"
@@ -170,8 +170,7 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
 						>
 							{!isCompact && "Sign In"}
 						</Button>
-					)
-				)}
+					))}
 			</div>
 		</div>
 	);

@@ -64,7 +64,10 @@ export const UserService = {
 	async updateProfile(
 		userId: string,
 		updates: Partial<
-			Pick<Profile, "username" | "display_name" | "bio" | "links" | "avatar_url">
+			Pick<
+				Profile,
+				"username" | "display_name" | "bio" | "links" | "avatar_url"
+			>
 		>,
 	): Promise<Profile | null> {
 		const { data, error } = await supabase()

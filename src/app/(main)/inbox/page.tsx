@@ -58,7 +58,14 @@ function formatTimeAgo(dateString: string): string {
 
 export default function InboxPage() {
 	const { user, loading: authLoading } = useAuth();
-	const { activities, isLoading, loadInitial, markAsRead, markAllAsRead, unreadCount } = useInboxStore();
+	const {
+		activities,
+		isLoading,
+		loadInitial,
+		markAsRead,
+		markAllAsRead,
+		unreadCount,
+	} = useInboxStore();
 
 	// Load inbox once when user is available
 	React.useEffect(() => {
@@ -155,14 +162,18 @@ export default function InboxPage() {
 							<div className="divide-y divide-default-100">
 								{activities.map((activity) => {
 									const config =
-										activityConfig[activity.type as keyof typeof activityConfig] ||
-										activityConfig.like;
+										activityConfig[
+											activity.type as keyof typeof activityConfig
+										] || activityConfig.like;
 									return (
 										<div
 											key={activity.id}
-											className={`flex items-start gap-3 p-4 hover:bg-default-50 transition-colors cursor-pointer ${!activity.is_read ? "bg-primary-50/30" : ""
-												}`}
-											onClick={() => handleMarkAsRead(activity.id, activity.is_read)}
+											className={`flex items-start gap-3 p-4 hover:bg-default-50 transition-colors cursor-pointer ${
+												!activity.is_read ? "bg-primary-50/30" : ""
+											}`}
+											onClick={() =>
+												handleMarkAsRead(activity.id, activity.is_read)
+											}
 										>
 											{!activity.is_read && (
 												<div className="w-2 h-2 rounded-full bg-primary mt-3 flex-shrink-0" />

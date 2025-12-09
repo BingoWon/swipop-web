@@ -14,7 +14,11 @@ interface MasonryGridProps {
  * Items with varying heights fill columns like bricks.
  * Column width is adaptive based on minColumnWidth (default 250px).
  */
-export function MasonryGrid({ projects, gap = 8, minColumnWidth = 250 }: MasonryGridProps) {
+export function MasonryGrid({
+	projects,
+	gap = 8,
+	minColumnWidth = 250,
+}: MasonryGridProps) {
 	return (
 		<div
 			className="w-full"

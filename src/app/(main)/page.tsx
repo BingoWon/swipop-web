@@ -17,22 +17,10 @@ export default function Home() {
 					<span className="font-bold">Swipop</span>
 				</Link>
 				<div className="flex gap-1">
-					<Button
-						as={Link}
-						href="/search"
-						isIconOnly
-						variant="light"
-						size="sm"
-					>
+					<Button as={Link} href="/search" isIconOnly variant="light" size="sm">
 						<Icon icon="solar:magnifer-linear" />
 					</Button>
-					<Button
-						as={Link}
-						href="/inbox"
-						isIconOnly
-						variant="light"
-						size="sm"
-					>
+					<Button as={Link} href="/inbox" isIconOnly variant="light" size="sm">
 						<Icon icon="solar:bell-linear" />
 					</Button>
 				</div>
