@@ -3,64 +3,23 @@
 import { Spinner } from "@heroui/react";
 import React from "react";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { InteractionService } from "@/lib/services/interaction";
-import { createClient } from "@/lib/supabase/client";
-import { useInteractionStore } from "@/lib/stores/interaction";
-import type { Project } from "@/lib/types";
-import { ResponsiveMasonryGrid } from "./MasonryGrid";
+import { useFeedStore } from "@/lib/stores/feed";
+import { MasonryGrid } from "./MasonryGrid";
 
+/**
+ * FeedSection - Uses global FeedStore for persistent data
+ * Matches iOS FeedView + FeedViewModel architecture
+ */
 export function FeedSection() {
 	const { user } = useAuth();
-	const [projects, setProjects] = React.useState<Project[]>([]);
-	const [loading, setLoading] = React.useState(true);
-	const [error, setError] = React.useState<string | null>(null);
-	const updateFromProjects = useInteractionStore((s) => s.updateFromProjects);
-	const setLikedProjects = useInteractionStore((s) => s.setLikedProjects);
+	const { projects, isLoading, error, loadInitial } = useFeedStore();
 
+	// Load feed once on mount (cached on subsequent visits)
 	React.useEffect(() => {
-		async function fetchProjects() {
-			try {
-				const supabase = createClient();
+		loadInitial(user?.id);
+	}, [user?.id, loadInitial]);
 
-				// Fetch projects and user's liked projects in parallel
-				const [projectsResult, likedProjectIds] = await Promise.all([
-					supabase
-						.from("projects")
-						.select(`*, creator:users(*)`)
-						.eq("is_published", true)
-						.order("created_at", { ascending: false })
-						.limit(50),
-					user ? InteractionService.fetchLikedProjectIds(user.id) : Promise.resolve([]),
-				]);
-
-				if (projectsResult.error) {
-					console.error("Error fetching projects:", projectsResult.error);
-					setError(projectsResult.error.message);
-					return;
-				}
-
-				const fetchedProjects = projectsResult.data || [];
-				setProjects(fetchedProjects);
-
-				// Hydrate InteractionStore with like counts
-				updateFromProjects(fetchedProjects);
-
-				// Hydrate InteractionStore with user's liked state
-				if (likedProjectIds.length > 0) {
-					setLikedProjects(likedProjectIds);
-				}
-			} catch (err) {
-				console.error("Error:", err);
-				setError("Failed to load projects");
-			} finally {
-				setLoading(false);
-			}
-		}
-
-		fetchProjects();
-	}, [user, updateFromProjects, setLikedProjects]);
-
-	if (loading) {
+	if (isLoading && projects.length === 0) {
 		return (
 			<div className="flex items-center justify-center py-20">
 				<Spinner size="lg" />
@@ -68,7 +27,7 @@ export function FeedSection() {
 		);
 	}
 
-	if (error) {
+	if (error && projects.length === 0) {
 		return (
 			<div className="text-center py-20 text-default-500">
 				<p>{error}</p>
@@ -84,5 +43,5 @@ export function FeedSection() {
 		);
 	}
 
-	return <ResponsiveMasonryGrid projects={projects} />;
+	return <MasonryGrid projects={projects} />;
 }

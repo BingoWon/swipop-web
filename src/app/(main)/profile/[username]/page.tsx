@@ -1,256 +1,18 @@
 "use client";
 
-import {
-	Avatar,
-	Button,
-	Input,
-	Modal,
-	ModalBody,
-	ModalContent,
-	ModalFooter,
-	ModalHeader,
-	Spinner,
-	Tab,
-	Tabs,
-	Textarea,
-	useDisclosure,
-} from "@heroui/react";
+import { Avatar, Button, Spinner, Tab, Tabs, useDisclosure } from "@heroui/react";
 import { Icon } from "@iconify/react";
-
 import Link from "next/link";
 import React from "react";
+import { EditProfileModal } from "@/components/profile/EditProfileModal";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { InteractionService } from "@/lib/services/interaction";
-import { UserService } from "@/lib/services/user";
-import { createClient } from "@/lib/supabase/client";
-import type { Profile, ProfileLink, Project } from "@/lib/types";
+import { useProfileStore } from "@/lib/stores/profile";
+import type { Profile, Project } from "@/lib/types";
 
-// Edit Profile Modal (matches iOS EditProfileView)
-function EditProfileModal({
-	profile,
-	isOpen,
-	onClose,
-	onSave,
-}: {
-	profile: Profile;
-	isOpen: boolean;
-	onClose: () => void;
-	onSave: (updated: Profile) => void;
-}) {
-	const [displayName, setDisplayName] = React.useState(profile.display_name || "");
-	const [username, setUsername] = React.useState(profile.username || "");
-	const [bio, setBio] = React.useState(profile.bio || "");
-	const [links, setLinks] = React.useState<ProfileLink[]>(profile.links || []);
-	const [avatarFile, setAvatarFile] = React.useState<File | null>(null);
-	const [avatarPreview, setAvatarPreview] = React.useState<string>(profile.avatar_url || "");
-	const [isSaving, setIsSaving] = React.useState(false);
-	const fileInputRef = React.useRef<HTMLInputElement>(null);
+// ============================================================================
+// Sub-Components
+// ============================================================================
 
-	// Reset state when modal opens
-	React.useEffect(() => {
-		if (isOpen) {
-			setDisplayName(profile.display_name || "");
-			setUsername(profile.username || "");
-			setBio(profile.bio || "");
-			setLinks(profile.links || []);
-			setAvatarPreview(profile.avatar_url || "");
-			setAvatarFile(null);
-		}
-	}, [isOpen, profile]);
-
-	const handleAddLink = () => {
-		setLinks([...links, { title: "", url: "" }]);
-	};
-
-	const handleRemoveLink = (index: number) => {
-		setLinks(links.filter((_, i) => i !== index));
-	};
-
-	const handleLinkChange = (index: number, field: keyof ProfileLink, value: string) => {
-		const updated = [...links];
-		updated[index] = { ...updated[index], [field]: value };
-		setLinks(updated);
-	};
-
-	const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (file) {
-			if (file.size > 5 * 1024 * 1024) { // 5MB limit
-				alert("File too large. Max size is 5MB.");
-				return;
-			}
-			setAvatarFile(file);
-			const objectUrl = URL.createObjectURL(file);
-			setAvatarPreview(objectUrl);
-
-			// Cleanup object URL on unmount or change
-			return () => URL.revokeObjectURL(objectUrl);
-		}
-	};
-
-	const uploadAvatar = async (userId: string, file: File): Promise<string | null> => {
-		const supabase = createClient();
-		const fileExt = file.name.split('.').pop();
-		const fileName = `${userId}/${Date.now()}.${fileExt}`;
-		const filePath = fileName;
-
-		const { error: uploadError } = await supabase.storage
-			.from('avatars')
-			.upload(filePath, file);
-
-		if (uploadError) {
-			console.error('Error uploading avatar:', uploadError);
-			return null;
-		}
-
-		const { data: { publicUrl } } = supabase.storage
-			.from('avatars')
-			.getPublicUrl(filePath);
-
-		return publicUrl;
-	};
-
-	const handleSave = async () => {
-		setIsSaving(true);
-		try {
-			let newAvatarUrl = profile.avatar_url;
-
-			if (avatarFile) {
-				const uploadedUrl = await uploadAvatar(profile.id, avatarFile);
-				if (uploadedUrl) {
-					newAvatarUrl = uploadedUrl;
-				}
-			}
-
-			const validLinks = links.filter((l) => l.title && l.url);
-			const updated = await UserService.updateProfile(profile.id, {
-				display_name: displayName || null,
-				username: username || null,
-				bio: bio || null,
-				links: validLinks,
-				avatar_url: newAvatarUrl,
-			});
-			if (updated) {
-				onSave(updated);
-				onClose();
-			}
-		} finally {
-			setIsSaving(false);
-		}
-	};
-
-	return (
-		<Modal isOpen={isOpen} onClose={onClose} size="lg" scrollBehavior="inside">
-			<ModalContent>
-				<ModalHeader>Edit Profile</ModalHeader>
-				<ModalBody className="gap-6">
-					{/* Avatar Upload */}
-					<div className="flex flex-col items-center gap-3">
-						<div className="relative group">
-							<Avatar
-								src={avatarPreview}
-								className="w-24 h-24 text-large"
-								isBordered
-							/>
-							<div
-								className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white"
-								onClick={() => fileInputRef.current?.click()}
-							>
-								<Icon icon="solar:camera-bold" className="text-2xl" />
-							</div>
-						</div>
-						<Button
-							size="sm"
-							variant="flat"
-							color="primary"
-							onPress={() => fileInputRef.current?.click()}
-						>
-							Change Photo
-						</Button>
-						<input
-							ref={fileInputRef}
-							type="file"
-							className="hidden"
-							accept="image/*"
-							onChange={handleAvatarChange}
-						/>
-					</div>
-
-					<div className="space-y-4">
-						<Input
-							label="Display Name"
-							placeholder="Your name"
-							value={displayName}
-							onValueChange={setDisplayName}
-						/>
-						<Input
-							label="Username"
-							placeholder="username"
-							value={username}
-							onValueChange={setUsername}
-							startContent={<span className="text-default-400 text-sm">@</span>}
-						/>
-						<Textarea
-							label="Bio"
-							placeholder="Tell us about yourself"
-							value={bio}
-							onValueChange={setBio}
-							minRows={2}
-							maxRows={4}
-						/>
-
-					</div>
-
-					<div className="space-y-3">
-						<div className="flex items-center justify-between">
-							<span className="text-sm font-medium">Links</span>
-							<Button size="sm" variant="flat" onPress={handleAddLink} startContent={<Icon icon="solar:add-circle-bold" />}>
-								Add Link
-							</Button>
-						</div>
-						{links.map((link, i) => (
-							<div key={i} className="flex gap-2 items-start">
-								<Input
-									size="sm"
-									placeholder="Title"
-									value={link.title}
-									onValueChange={(v) => handleLinkChange(i, "title", v)}
-									className="flex-1"
-								/>
-								<Input
-									size="sm"
-									placeholder="https://..."
-									value={link.url}
-									onValueChange={(v) => handleLinkChange(i, "url", v)}
-									className="flex-[2]"
-								/>
-								<Button
-									isIconOnly
-									size="sm"
-									variant="light"
-									color="danger"
-									onPress={() => handleRemoveLink(i)}
-								>
-									<Icon icon="solar:trash-bin-trash-bold" />
-								</Button>
-							</div>
-						))}
-					</div>
-				</ModalBody>
-				<ModalFooter>
-					<Button variant="flat" onPress={onClose}>
-						Cancel
-					</Button>
-					<Button color="primary" onPress={handleSave} isLoading={isSaving}>
-						Save
-					</Button>
-				</ModalFooter>
-			</ModalContent>
-		</Modal>
-	);
-}
-
-// Profile Header (matches iOS ProfileHeaderView)
 function ProfileHeader({
 	profile,
 	isOwnProfile,
@@ -262,7 +24,6 @@ function ProfileHeader({
 }) {
 	return (
 		<div className="flex flex-col gap-4">
-			{/* Avatar + Name + Edit row */}
 			<div className="flex items-center gap-4">
 				<Avatar
 					className="h-[72px] w-[72px] text-2xl shrink-0"
@@ -270,14 +31,12 @@ function ProfileHeader({
 					name={(profile.display_name || profile.username || "U").charAt(0).toUpperCase()}
 					src={profile.avatar_url || undefined}
 				/>
-
 				<div className="flex-1 min-w-0">
 					<p className="text-xl font-bold truncate">
 						{profile.display_name || profile.username || "User"}
 					</p>
 					<p className="text-sm text-default-500 truncate">@{profile.username}</p>
 				</div>
-
 				{isOwnProfile && onEditTapped && (
 					<Button size="sm" variant="flat" className="shrink-0" onPress={onEditTapped}>
 						Edit
@@ -285,12 +44,8 @@ function ProfileHeader({
 				)}
 			</div>
 
-			{/* Bio */}
-			{profile.bio && (
-				<p className="text-sm text-default-600 line-clamp-3">{profile.bio}</p>
-			)}
+			{profile.bio && <p className="text-sm text-default-600 line-clamp-3">{profile.bio}</p>}
 
-			{/* Links */}
 			{profile.links && profile.links.length > 0 && (
 				<div className="flex flex-wrap gap-2">
 					{profile.links.map((link) => (
@@ -311,7 +66,6 @@ function ProfileHeader({
 	);
 }
 
-// Stats Row (matches iOS ProfileStatsRow)
 function ProfileStatsRow({
 	projectCount,
 	followerCount,
@@ -340,7 +94,6 @@ function ProfileStatsRow({
 	);
 }
 
-// Profile Project Cell (matches iOS ProfileProjectCell - cover only)
 function ProfileProjectCell({
 	project,
 	showDraftBadge,
@@ -351,7 +104,6 @@ function ProfileProjectCell({
 	isOwnProfile?: boolean;
 }) {
 	const aspectRatio = project.thumbnail_aspect_ratio || 0.75;
-	// Own profile → edit, other profile → view details (matches iOS editProject behavior)
 	const href = isOwnProfile ? `/create/${project.id}` : `/project/${project.id}`;
 
 	return (
@@ -372,7 +124,6 @@ function ProfileProjectCell({
 					</div>
 				)}
 			</div>
-
 			{showDraftBadge && (
 				<span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 text-[10px] font-semibold text-black bg-orange-400 rounded">
 					Draft
@@ -382,36 +133,22 @@ function ProfileProjectCell({
 	);
 }
 
-// True Masonry Grid using CSS multi-column layout for varying height items
-function MasonryGrid({
+function ProjectGrid({
 	projects,
 	showDraftBadges,
 	isOwnProfile,
-	minColumnWidth = 250,
-	gap = 8,
 }: {
 	projects: Project[];
 	showDraftBadges?: boolean;
 	isOwnProfile?: boolean;
-	minColumnWidth?: number;
-	gap?: number;
 }) {
 	return (
 		<div
 			className="mt-4"
-			style={{
-				columnWidth: `${minColumnWidth}px`,
-				columnGap: `${gap}px`,
-			}}
+			style={{ columnWidth: "250px", columnGap: "8px" }}
 		>
 			{projects.map((project) => (
-				<div
-					key={project.id}
-					style={{
-						breakInside: "avoid",
-						marginBottom: `${gap}px`,
-					}}
-				>
+				<div key={project.id} style={{ breakInside: "avoid", marginBottom: "8px" }}>
 					<ProfileProjectCell
 						project={project}
 						showDraftBadge={showDraftBadges && !project.is_published}
@@ -423,7 +160,6 @@ function MasonryGrid({
 	);
 }
 
-// Empty State
 function EmptyState({ icon, message }: { icon: string; message: string }) {
 	return (
 		<div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -433,14 +169,7 @@ function EmptyState({ icon, message }: { icon: string; message: string }) {
 	);
 }
 
-// Follow Button (for other profiles)
-function FollowButton({
-	isFollowing,
-	onPress,
-}: {
-	isFollowing: boolean;
-	onPress: () => void;
-}) {
+function FollowButton({ isFollowing, onPress }: { isFollowing: boolean; onPress: () => void }) {
 	return (
 		<Button
 			size="sm"
@@ -454,104 +183,29 @@ function FollowButton({
 	);
 }
 
-export default function ProfilePage({
-	params,
-}: {
-	params: Promise<{ username: string }>;
-}) {
-	const { user, refreshProfile } = useAuth();
-	const [profile, setProfile] = React.useState<Profile | null>(null);
-	const [projects, setProjects] = React.useState<Project[]>([]);
-	const [likedProjects, setLikedProjects] = React.useState<Project[]>([]);
-	const [collectedProjects, setCollectedProjects] = React.useState<Project[]>([]);
-	const [loading, setLoading] = React.useState(true);
-	const [isFollowing, setIsFollowing] = React.useState(false);
-	const [followerCount, setFollowerCount] = React.useState(0);
-	const [followingCount, setFollowingCount] = React.useState(0);
-	const [likeCount, setLikeCount] = React.useState(0);
-	const [selectedTab, setSelectedTab] = React.useState("projects");
+// ============================================================================
+// Main Page Component
+// ============================================================================
 
+export default function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
+	const { user, refreshProfile } = useAuth();
+	const { profiles, loadingUsername, error, loadProfile, updateProfile, toggleFollow } = useProfileStore();
+	const [selectedTab, setSelectedTab] = React.useState("projects");
+	const [username, setUsername] = React.useState<string | null>(null);
 	const editModal = useDisclosure();
 
+	// Resolve params and load profile
 	React.useEffect(() => {
-		async function loadData() {
-			const { username } = await params;
-			const supabase = createClient();
+		params.then(({ username: u }) => {
+			setUsername(u);
+			loadProfile(u, user?.id);
+		});
+	}, [params, user?.id, loadProfile]);
 
-			// Step 1: Fetch profile first (needed for user ID)
-			const { data: profileData, error: profileError } = await supabase
-				.from("users")
-				.select("*")
-				.eq("username", username)
-				.single();
+	const profileData = username ? profiles[username] : null;
+	const isLoading = loadingUsername === username;
 
-			if (profileError || !profileData) {
-				console.error("Error fetching profile:", profileError);
-				setLoading(false);
-				return;
-			}
-
-			setProfile(profileData);
-			const isOwnProfile = user?.id === profileData.id;
-
-			// Step 2: Fetch ALL remaining data in parallel
-			// Build project query
-			let projectQuery = supabase
-				.from("projects")
-				.select("*")
-				.eq("user_id", profileData.id)
-				.order("created_at", { ascending: false });
-			if (!isOwnProfile) {
-				projectQuery = projectQuery.eq("is_published", true);
-			}
-
-			// Run ALL queries in parallel
-			const [
-				projectsResult,
-				followers,
-				following,
-				likes,
-				liked,
-				collected,
-				isFollowingResult,
-			] = await Promise.all([
-				projectQuery,
-				UserService.fetchFollowerCount(profileData.id),
-				UserService.fetchFollowingCount(profileData.id),
-				InteractionService.fetchLikeCount(profileData.id),
-				isOwnProfile && user ? InteractionService.fetchLikedProjects(user.id) : Promise.resolve([]),
-				isOwnProfile && user ? InteractionService.fetchCollectedProjects(user.id) : Promise.resolve([]),
-				user && !isOwnProfile ? UserService.isFollowing(user.id, profileData.id) : Promise.resolve(false),
-			]);
-
-			// Apply results
-			setProjects(projectsResult.data || []);
-			setFollowerCount(followers);
-			setFollowingCount(following);
-			setLikeCount(likes);
-			setLikedProjects(liked);
-			setCollectedProjects(collected);
-			setIsFollowing(isFollowingResult);
-
-			setLoading(false);
-		}
-
-		loadData();
-	}, [params, user]);
-
-	const handleFollow = async () => {
-		if (!user || !profile) return;
-		const newIsFollowing = await UserService.toggleFollow(user.id, profile.id);
-		setIsFollowing(newIsFollowing);
-		setFollowerCount(newIsFollowing ? followerCount + 1 : followerCount - 1);
-	};
-
-	const handleProfileUpdate = (updated: Profile) => {
-		setProfile(updated);
-		refreshProfile(); // Update global auth context
-	};
-
-	if (loading) {
+	if (isLoading && !profileData) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
 				<Spinner size="lg" />
@@ -559,7 +213,15 @@ export default function ProfilePage({
 		);
 	}
 
-	if (!profile) {
+	if (error && !profileData) {
+		return (
+			<div className="flex items-center justify-center min-h-[60vh]">
+				<p className="text-default-500">{error}</p>
+			</div>
+		);
+	}
+
+	if (!profileData || !username) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
 				<p className="text-default-500">User not found</p>
@@ -567,26 +229,35 @@ export default function ProfilePage({
 		);
 	}
 
+	const { profile, projects, likedProjects, collectedProjects, isFollowing, followerCount, followingCount, likeCount } = profileData;
 	const isOwnProfile = user?.id === profile.id;
 
-	// Tab content
+	const handleFollow = () => {
+		if (user) toggleFollow(username, user.id);
+	};
+
+	const handleProfileUpdate = (updated: Profile) => {
+		updateProfile(username, updated);
+		refreshProfile();
+	};
+
 	const renderTabContent = () => {
 		switch (selectedTab) {
 			case "projects":
 				return projects.length > 0 ? (
-					<MasonryGrid projects={projects} showDraftBadges={isOwnProfile} isOwnProfile={isOwnProfile} />
+					<ProjectGrid projects={projects} showDraftBadges={isOwnProfile} isOwnProfile={isOwnProfile} />
 				) : (
 					<EmptyState icon="solar:code-bold" message="No projects created yet" />
 				);
 			case "likes":
 				return likedProjects.length > 0 ? (
-					<MasonryGrid projects={likedProjects} isOwnProfile={isOwnProfile} />
+					<ProjectGrid projects={likedProjects} isOwnProfile={isOwnProfile} />
 				) : (
 					<EmptyState icon="solar:heart-bold" message="No liked projects yet" />
 				);
 			case "collected":
 				return collectedProjects.length > 0 ? (
-					<MasonryGrid projects={collectedProjects} isOwnProfile={isOwnProfile} />
+					<ProjectGrid projects={collectedProjects} isOwnProfile={isOwnProfile} />
 				) : (
 					<EmptyState icon="solar:bookmark-bold" message="No saved projects yet" />
 				);
@@ -597,21 +268,14 @@ export default function ProfilePage({
 
 	return (
 		<>
-			{/* Follow button for other profiles */}
 			{!isOwnProfile && user && (
 				<div className="flex justify-end mb-4">
 					<FollowButton isFollowing={isFollowing} onPress={handleFollow} />
 				</div>
 			)}
 
-			{/* Profile Header */}
-			<ProfileHeader
-				profile={profile}
-				isOwnProfile={isOwnProfile}
-				onEditTapped={editModal.onOpen}
-			/>
+			<ProfileHeader profile={profile} isOwnProfile={isOwnProfile} onEditTapped={editModal.onOpen} />
 
-			{/* Stats Row */}
 			<ProfileStatsRow
 				projectCount={projects.length}
 				followerCount={followerCount}
@@ -619,7 +283,6 @@ export default function ProfilePage({
 				likeCount={likeCount}
 			/>
 
-			{/* Tabs (icon only, matches iOS) */}
 			<div className="mt-6">
 				<Tabs
 					selectedKey={selectedTab}
@@ -632,25 +295,14 @@ export default function ProfilePage({
 						cursor: "bg-primary",
 					}}
 				>
-					<Tab
-						key="projects"
-						title={<Icon icon="solar:widget-2-bold" className="text-xl" />}
-					/>
-					<Tab
-						key="likes"
-						title={<Icon icon="solar:heart-bold" className="text-xl" />}
-					/>
-					<Tab
-						key="collected"
-						title={<Icon icon="solar:bookmark-bold" className="text-xl" />}
-					/>
+					<Tab key="projects" title={<Icon icon="solar:widget-2-bold" className="text-xl" />} />
+					<Tab key="likes" title={<Icon icon="solar:heart-bold" className="text-xl" />} />
+					<Tab key="collected" title={<Icon icon="solar:bookmark-bold" className="text-xl" />} />
 				</Tabs>
 			</div>
 
-			{/* Tab Content */}
 			<div className="pb-4">{renderTabContent()}</div>
 
-			{/* Edit Profile Modal */}
 			{isOwnProfile && (
 				<EditProfileModal
 					profile={profile}

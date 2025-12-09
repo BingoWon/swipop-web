@@ -17,9 +17,7 @@ import React from "react";
 import { SignInPrompt, signInPrompts } from "@/components/auth/SignInPrompt";
 import { PageLoading } from "@/components/ui/LoadingState";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { ActivityService } from "@/lib/services/activity";
-import { createClient } from "@/lib/supabase/client";
-import type { Activity, Profile, Project } from "@/lib/types";
+import { useInboxStore } from "@/lib/stores/inbox";
 
 const activityConfig = {
 	like: {
@@ -60,68 +58,25 @@ function formatTimeAgo(dateString: string): string {
 
 export default function InboxPage() {
 	const { user, loading: authLoading } = useAuth();
-	const [activities, setActivities] = React.useState<
-		(Activity & { actor?: Profile; project?: Project })[]
-	>([]);
-	const [isLoading, setIsLoading] = React.useState(true);
+	const { activities, isLoading, loadInitial, markAsRead, markAllAsRead, unreadCount } = useInboxStore();
 
+	// Load inbox once when user is available
 	React.useEffect(() => {
-		async function fetchActivities() {
-			if (!user) {
-				setIsLoading(false);
-				return;
-			}
-
-			const supabase = createClient();
-			const { data, error } = await supabase
-				.from("activities")
-				.select(`
-          *,
-          actor:users!activities_actor_id_fkey (
-            id,
-            username,
-            display_name,
-            avatar_url
-          ),
-          project:projects!activities_project_id_fkey (
-            id,
-            title
-          )
-        `)
-				.eq("user_id", user.id)
-				.order("created_at", { ascending: false })
-				.limit(50);
-
-			if (error) {
-				console.error("Error fetching activities:", error);
-			} else {
-				setActivities(data || []);
-			}
-
-			setIsLoading(false);
+		if (user) {
+			loadInitial(user.id);
 		}
+	}, [user, loadInitial]);
 
-		fetchActivities();
-	}, [user]);
-
-	const handleMarkAllAsRead = async () => {
-		if (!user) return;
-		await ActivityService.markAllAsRead(user.id);
-		setActivities(activities.map((a) => ({ ...a, is_read: true })));
+	const handleMarkAllAsRead = () => {
+		if (user) markAllAsRead(user.id);
 	};
 
-	const handleMarkAsRead = async (activityId: string) => {
-		await ActivityService.markAsRead(activityId);
-		setActivities(
-			activities.map((a) =>
-				a.id === activityId ? { ...a, is_read: true } : a,
-			),
-		);
+	const handleMarkAsRead = (activityId: string, isRead: boolean) => {
+		if (!isRead) markAsRead(activityId);
 	};
 
-	const unreadCount = activities.filter((a) => !a.is_read).length;
+	const currentUnreadCount = unreadCount();
 
-	// Show loading state while auth is initializing
 	if (authLoading) {
 		return <PageLoading />;
 	}
@@ -136,13 +91,13 @@ export default function InboxPage() {
 			<div className="flex items-center justify-between mb-6">
 				<div className="flex items-center gap-3">
 					<h1 className="text-2xl font-bold">Inbox</h1>
-					{unreadCount > 0 && (
+					{currentUnreadCount > 0 && (
 						<Chip color="primary" size="sm">
-							{unreadCount} new
+							{currentUnreadCount} new
 						</Chip>
 					)}
 				</div>
-				{unreadCount > 0 && (
+				{currentUnreadCount > 0 && (
 					<Button variant="light" size="sm" onPress={handleMarkAllAsRead}>
 						Mark all as read
 					</Button>
@@ -183,7 +138,7 @@ export default function InboxPage() {
 			{/* Activities List */}
 			<Card>
 				<CardBody className="p-0">
-					{isLoading ? (
+					{isLoading && activities.length === 0 ? (
 						<div className="flex items-center justify-center py-12">
 							<Spinner size="lg" />
 						</div>
@@ -200,17 +155,14 @@ export default function InboxPage() {
 							<div className="divide-y divide-default-100">
 								{activities.map((activity) => {
 									const config =
-										activityConfig[
-										activity.type as keyof typeof activityConfig
-										] || activityConfig.like;
+										activityConfig[activity.type as keyof typeof activityConfig] ||
+										activityConfig.like;
 									return (
 										<div
 											key={activity.id}
 											className={`flex items-start gap-3 p-4 hover:bg-default-50 transition-colors cursor-pointer ${!activity.is_read ? "bg-primary-50/30" : ""
 												}`}
-											onClick={() =>
-												!activity.is_read && handleMarkAsRead(activity.id)
-											}
+											onClick={() => handleMarkAsRead(activity.id, activity.is_read)}
 										>
 											{!activity.is_read && (
 												<div className="w-2 h-2 rounded-full bg-primary mt-3 flex-shrink-0" />
