@@ -136,11 +136,11 @@ interface ThinkingSegmentProps {
 
 function ThinkingSegment({ text, isActive, startTime }: ThinkingSegmentProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
-	const [elapsed, setElapsed] = useState(() => Math.floor((Date.now() - startTime) / 1000));
+	// For historical thinking (startTime=0), don't show elapsed time
+	const [elapsed, setElapsed] = useState(() => startTime > 0 ? Math.floor((Date.now() - startTime) / 1000) : 0);
 
 	useEffect(() => {
-		if (!isActive) return;
-		// Update immediately and then every second
+		if (!isActive || startTime === 0) return;
 		const update = () => setElapsed(Math.floor((Date.now() - startTime) / 1000));
 		update();
 		const id = setInterval(update, 1000);
@@ -155,7 +155,9 @@ function ThinkingSegment({ text, isActive, startTime }: ThinkingSegmentProps) {
 		>
 			<div className="flex items-center gap-2 px-3 py-2.5">
 				<Icon icon="solar:brain-bold" className={cn("text-base shrink-0", isActive ? "text-primary animate-pulse" : "text-primary/80")} />
-				<span className="text-small font-medium whitespace-nowrap">{isActive ? `Thinking ${elapsed}s` : `Thought for ${elapsed || "..."}s`}</span>
+				<span className="text-small font-medium whitespace-nowrap">
+					{isActive ? `Thinking ${elapsed}s` : (startTime > 0 ? `Thought for ${elapsed}s` : "Thought")}
+				</span>
 				{isActive && <ShimmerBar />}
 				{text && <Icon icon="solar:alt-arrow-right-linear" className={cn("text-default-400 ml-auto shrink-0 transition-transform", isExpanded && "rotate-90")} />}
 			</div>

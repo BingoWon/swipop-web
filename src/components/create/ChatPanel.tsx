@@ -35,7 +35,7 @@ export function ChatPanel() {
 
     // Streaming state refs (matches iOS)
     const currentMsgIndexRef = useRef(0);
-    const currentThinkingIndexRef = useRef<number | null>(null);  // NEW: Track current thinking segment
+    const currentThinkingIndexRef = useRef<number | null>(null);
     const accumulatedReasoningRef = useRef("");
     const toolCallsRef = useRef<Record<number, { id: string; name: string; args: string; segmentIndex: number }>>({});
     const currentTextSegmentRef = useRef(-1);
@@ -133,7 +133,7 @@ export function ChatPanel() {
         setMessages((prev) => prev.map((m, i) => (i === currentMsgIndexRef.current ? updater(m) : m)));
     }, [setMessages]);
 
-    // Finalize current thinking segment (NEW - matches iOS finalizeCurrentThinking)
+    // Finalize current thinking segment (matches iOS finalizeCurrentThinking)
     const finalizeCurrentThinking = useCallback(() => {
         const thinkingIdx = currentThinkingIndexRef.current;
         if (thinkingIdx === null) return;
