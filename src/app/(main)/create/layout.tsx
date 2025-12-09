@@ -359,7 +359,13 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 
 		setIsCapturingThumbnail(true);
 		try {
+			// Use iframe's actual dimensions to avoid partial capture
 			const canvas = await html2canvas(iframe.contentDocument.body, {
+				width: iframe.clientWidth,
+				height: iframe.clientHeight,
+				windowWidth: iframe.clientWidth,
+				windowHeight: iframe.clientHeight,
+				scale: 1, // Avoid devicePixelRatio issues
 				useCORS: true,
 				allowTaint: true,
 				backgroundColor: "#000",

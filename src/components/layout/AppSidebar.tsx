@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, Button, ScrollShadow, Spacer, Spinner } from "@heroui/react";
+import { Avatar, Button, ScrollShadow, Spacer } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -64,8 +64,14 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
 
 			{/* User Info */}
 			{loading ? (
-				<div className="flex items-center justify-center py-4">
-					<Spinner size="sm" />
+				<div className="flex items-center gap-3 px-2">
+					<div className="w-8 h-8 rounded-full bg-default-200 animate-pulse shrink-0" />
+					{!isCompact && (
+						<div className="flex flex-col gap-1.5">
+							<div className="w-24 h-4 rounded bg-default-200 animate-pulse" />
+							<div className="w-16 h-3 rounded bg-default-100 animate-pulse" />
+						</div>
+					)}
 				</div>
 			) : user && profile ? (
 				<Link
@@ -77,7 +83,7 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
 						showFallback
 						name={profile.display_name?.[0] || profile.username?.[0] || "U"}
 						src={profile.avatar_url || undefined}
-						className="flex-shrink-0"
+						className="shrink-0"
 					/>
 					{!isCompact && (
 						<div className="flex flex-col">
@@ -90,7 +96,7 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
 				</Link>
 			) : (
 				<div className="flex items-center gap-3 px-2">
-					<Avatar size="sm" showFallback name="U" className="flex-shrink-0" />
+					<Avatar size="sm" showFallback name="U" className="shrink-0" />
 					{!isCompact && (
 						<div className="flex flex-col">
 							<p className="text-small text-foreground font-medium">Guest</p>
