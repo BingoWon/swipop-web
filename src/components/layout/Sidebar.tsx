@@ -33,6 +33,7 @@ export interface SidebarItem {
 
 export interface SidebarProps
 	extends Omit<ListboxProps<SidebarItem>, "children" | "onSelect"> {
+	id?: string;
 	items: SidebarItem[];
 	isCompact?: boolean;
 	hideEndContent?: boolean;
@@ -46,6 +47,7 @@ export interface SidebarProps
 const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
 	(
 		{
+			id,
 			items,
 			isCompact,
 			defaultSelectedKey,
@@ -252,6 +254,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
 
 		return (
 			<Listbox
+				id={id}
 				key={isCompact ? "compact" : "default"}
 				ref={ref}
 				hideSelectedIcon

@@ -105,12 +105,14 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
 			{/* Navigation */}
 			<ScrollShadow className="-mr-6 h-full max-h-full pr-6">
 				<Sidebar
+					id="sidebar-main"
 					defaultSelectedKey={getSelectedKey()}
 					items={itemsWithBadge}
 					isCompact={isCompact}
 				/>
 				<Spacer y={6} />
 				<Sidebar
+					id="sidebar-secondary"
 					defaultSelectedKey=""
 					items={secondarySidebarItems}
 					isCompact={isCompact}
