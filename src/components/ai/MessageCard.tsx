@@ -54,7 +54,7 @@ function renderSegment(segment: Segment, index: number, isUser: boolean) {
 			);
 
 		case "thinking":
-			return <ThinkingSegment key={index} text={segment.content} isActive={segment.isActive} />;
+			return <ThinkingSegment key={index} text={segment.content} isActive={segment.isActive} startTime={segment.startTime} />;
 
 		case "tool_call":
 			return <ToolCallSegment key={segment.id} segment={segment} />;
@@ -131,18 +131,21 @@ function ToolCallSegment({ segment }: ToolCallSegmentProps) {
 interface ThinkingSegmentProps {
 	text: string;
 	isActive: boolean;
+	startTime: number;
 }
 
-function ThinkingSegment({ text, isActive }: ThinkingSegmentProps) {
+function ThinkingSegment({ text, isActive, startTime }: ThinkingSegmentProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
-	const [elapsed, setElapsed] = useState(0);
+	const [elapsed, setElapsed] = useState(() => Math.floor((Date.now() - startTime) / 1000));
 
 	useEffect(() => {
 		if (!isActive) return;
-		const start = Date.now();
-		const id = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 1000);
+		// Update immediately and then every second
+		const update = () => setElapsed(Math.floor((Date.now() - startTime) / 1000));
+		update();
+		const id = setInterval(update, 1000);
 		return () => clearInterval(id);
-	}, [isActive]);
+	}, [isActive, startTime]);
 
 	return (
 		<Card

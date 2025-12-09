@@ -35,9 +35,9 @@ export function ChatPanel() {
 
     // Streaming state refs (matches iOS)
     const currentMsgIndexRef = useRef(0);
+    const currentThinkingIndexRef = useRef<number | null>(null);  // NEW: Track current thinking segment
     const accumulatedReasoningRef = useRef("");
     const toolCallsRef = useRef<Record<number, { id: string; name: string; args: string; segmentIndex: number }>>({});
-    // Track current round's text segment index (-1 means need to create new)
     const currentTextSegmentRef = useRef(-1);
 
     // Check if model supports thinking
@@ -131,7 +131,40 @@ export function ChatPanel() {
     // Update assistant message helper
     const updateAssistant = useCallback((updater: (msg: Message) => Message) => {
         setMessages((prev) => prev.map((m, i) => (i === currentMsgIndexRef.current ? updater(m) : m)));
-    }, []);
+    }, [setMessages]);
+
+    // Finalize current thinking segment (NEW - matches iOS finalizeCurrentThinking)
+    const finalizeCurrentThinking = useCallback(() => {
+        const thinkingIdx = currentThinkingIndexRef.current;
+        if (thinkingIdx === null) return;
+
+        updateAssistant((m) => {
+            if (thinkingIdx >= m.segments.length) return m;
+            const segment = m.segments[thinkingIdx];
+            if (segment.type !== "thinking" || !segment.isActive) return m;
+
+            const segments = [...m.segments];
+            // Remove empty thinking segments
+            if (!segment.content) {
+                segments.splice(thinkingIdx, 1);
+                // Adjust tool call segment indices
+                for (const key of Object.keys(toolCallsRef.current)) {
+                    const tc = toolCallsRef.current[Number(key)];
+                    if (tc.segmentIndex > thinkingIdx) {
+                        tc.segmentIndex -= 1;
+                    }
+                }
+                // Adjust text segment index
+                if (currentTextSegmentRef.current > thinkingIdx) {
+                    currentTextSegmentRef.current -= 1;
+                }
+            } else {
+                segments[thinkingIdx] = { ...segment, isActive: false };
+            }
+            return { ...m, segments };
+        });
+        currentThinkingIndexRef.current = null;
+    }, [updateAssistant]);
 
     // Process stream events
     const processStream = useCallback(async () => {
@@ -144,41 +177,51 @@ export function ChatPanel() {
             signal: abortRef.current?.signal,
             onEvent: (event: StreamEvent) => {
                 switch (event.type) {
-                    case "reasoning":
+                    case "reasoning": {
                         reasoningContent += event.content;
                         accumulatedReasoningRef.current += event.content;
-                        updateAssistant((m) => {
-                            const segments = [...m.segments];
-                            const idx = segments.findIndex((s) => s.type === "thinking");
-                            if (idx >= 0) segments[idx] = { type: "thinking", content: reasoningContent, isActive: true };
-                            else segments.unshift({ type: "thinking", content: reasoningContent, isActive: true });
-                            return { ...m, segments };
-                        });
+                        const thinkingIdx = currentThinkingIndexRef.current;
+                        if (thinkingIdx !== null) {
+                            updateAssistant((m) => {
+                                const segments = [...m.segments];
+                                const segment = segments[thinkingIdx];
+                                if (segment?.type === "thinking") {
+                                    segments[thinkingIdx] = { ...segment, content: reasoningContent };
+                                }
+                                return { ...m, segments };
+                            });
+                        }
                         break;
+                    }
 
-                    case "content":
+                    case "content": {
+                        // Finalize thinking before adding content
+                        finalizeCurrentThinking();
                         textContent += event.content;
                         updateAssistant((m) => {
                             const segments = [...m.segments];
-                            // If we don't have a text segment for this round, create one
                             if (currentTextSegmentRef.current < 0) {
                                 currentTextSegmentRef.current = segments.length;
                                 segments.push({ type: "text", content: textContent });
                             } else {
-                                // Update existing text segment for this round
                                 segments[currentTextSegmentRef.current] = { type: "text", content: textContent };
                             }
                             return { ...m, content: textContent, segments };
                         });
                         break;
+                    }
 
                     case "tool_call_start": {
-                        const segmentIndex = messages[currentMsgIndexRef.current]?.segments.length ?? 0;
-                        toolCallsRef.current[event.index] = { id: event.id, name: event.name, args: "", segmentIndex };
-                        updateAssistant((m) => ({
-                            ...m,
-                            segments: [...m.segments, { type: "tool_call", id: event.id, name: event.name, arguments: "", isStreaming: true }],
-                        }));
+                        // Finalize thinking before tool call
+                        finalizeCurrentThinking();
+                        updateAssistant((m) => {
+                            const segmentIndex = m.segments.length;
+                            toolCallsRef.current[event.index] = { id: event.id, name: event.name, args: "", segmentIndex };
+                            return {
+                                ...m,
+                                segments: [...m.segments, { type: "tool_call", id: event.id, name: event.name, arguments: "", isStreaming: true }],
+                            };
+                        });
                         break;
                     }
 
@@ -210,20 +253,16 @@ export function ChatPanel() {
                         break;
 
                     case "done":
-                        // Finalize thinking segment
-                        updateAssistant((m) => ({
-                            ...m,
-                            isStreaming: false,
-                            segments: m.segments.map((s) => (s.type === "thinking" ? { ...s, isActive: false } : s)),
-                        }));
+                        // Finalize only the current thinking segment
+                        finalizeCurrentThinking();
+                        updateAssistant((m) => ({ ...m, isStreaming: false }));
                         break;
                 }
             },
         });
 
-        // Return accumulated content for history
         return { textContent, reasoningContent };
-    }, [historyRef, selectedModel, executeTool, setPromptTokens, updateAssistant, messages]);
+    }, [historyRef, selectedModel, executeTool, setPromptTokens, updateAssistant, finalizeCurrentThinking]);
 
     // Finalize tool calls and continue (matches iOS finalizeToolCallsAndContinue)
     const finalizeToolCallsAndContinue = useCallback(async (textContent: string, reasoningContent: string) => {
@@ -231,10 +270,8 @@ export function ChatPanel() {
         const hasToolCalls = Object.keys(toolCalls).length > 0;
 
         if (!hasToolCalls) {
-            // No tool calls - add assistant content to history and finish
             if (textContent) {
                 historyRef.current.push({ role: "assistant", content: textContent });
-
             }
             setIsLoading(false);
             return;
@@ -269,14 +306,18 @@ export function ChatPanel() {
         // Clear tool calls and text segment ref for next round
         toolCallsRef.current = {};
         accumulatedReasoningRef.current = "";
-        currentTextSegmentRef.current = -1;  // Reset so next round creates new text segment
+        currentTextSegmentRef.current = -1;
 
         // Add new thinking segment if model supports it (matches iOS continueAfterToolCalls)
         if (supportsThinking) {
-            updateAssistant((m) => ({
-                ...m,
-                segments: [...m.segments, { type: "thinking", content: "", isActive: true }],
-            }));
+            updateAssistant((m) => {
+                const newThinkingIdx = m.segments.length;
+                currentThinkingIndexRef.current = newThinkingIdx;
+                return {
+                    ...m,
+                    segments: [...m.segments, { type: "thinking", content: "", isActive: true, startTime: Date.now() }],
+                };
+            });
         }
 
         // Continue streaming for AI response after tool execution
@@ -304,13 +345,16 @@ export function ChatPanel() {
         // Add to history with context
         historyRef.current.push({ role: "user", content: buildContext(text) });
 
-        // Create assistant message
+        // Create assistant message with initial thinking segment if supported
         const assistantId = crypto.randomUUID();
-        const initialSegments: Segment[] = supportsThinking ? [{ type: "thinking", content: "", isActive: true }] : [];
+        const initialSegments: Segment[] = supportsThinking
+            ? [{ type: "thinking", content: "", isActive: true, startTime: Date.now() }]
+            : [];
         const assistantMsg: Message = { id: assistantId, role: "assistant", content: "", segments: initialSegments, isStreaming: true };
 
         setMessages((prev) => {
             currentMsgIndexRef.current = prev.length;
+            currentThinkingIndexRef.current = supportsThinking ? 0 : null;
             return [...prev, assistantMsg];
         });
 
@@ -318,19 +362,20 @@ export function ChatPanel() {
         abortRef.current = new AbortController();
         toolCallsRef.current = {};
         accumulatedReasoningRef.current = "";
-        currentTextSegmentRef.current = -1;  // Reset for new message
+        currentTextSegmentRef.current = -1;
 
         // Process stream
         const { textContent, reasoningContent } = await processStream();
 
         // Handle tool calls or finalize
         await finalizeToolCallsAndContinue(textContent, reasoningContent);
-    }, [input, isLoading, clearReasoningFromHistory, historyRef, buildContext, supportsThinking, processStream, finalizeToolCallsAndContinue]);
+    }, [input, isLoading, clearReasoningFromHistory, setMessages, historyRef, buildContext, supportsThinking, processStream, finalizeToolCallsAndContinue]);
 
     const handleStop = useCallback(() => {
         abortRef.current?.abort();
+        finalizeCurrentThinking();
         setIsLoading(false);
-    }, []);
+    }, [finalizeCurrentThinking]);
 
     // Auto-scroll
     useEffect(() => {

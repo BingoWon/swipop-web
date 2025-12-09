@@ -31,7 +31,7 @@ export interface HistoryEntry {
 // Message types for UI display (matches iOS ChatMessage)
 export type Segment =
 	| { type: "text"; content: string }
-	| { type: "thinking"; content: string; isActive: boolean; duration?: number }
+	| { type: "thinking"; content: string; isActive: boolean; startTime: number }
 	| { type: "tool_call"; id: string; name: string; arguments: string; result?: string; isStreaming: boolean };
 
 export interface Message {
@@ -240,7 +240,7 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
 						currentAssistantMsg = { id: crypto.randomUUID(), role: "assistant", content: "", segments: [] };
 					}
 					if (entry.reasoning_content) {
-						currentAssistantMsg.segments.push({ type: "thinking", content: entry.reasoning_content, isActive: false });
+						currentAssistantMsg.segments.push({ type: "thinking", content: entry.reasoning_content, isActive: false, startTime: 0 });
 					}
 					if (entry.tool_calls) {
 						for (const tc of entry.tool_calls) {
