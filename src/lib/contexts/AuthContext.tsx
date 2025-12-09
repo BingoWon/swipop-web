@@ -1,14 +1,8 @@
 "use client";
 
-import type { User } from "@supabase/supabase-js";
+import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 import type React from "react";
-import {
-	createContext,
-	useCallback,
-	useContext,
-	useEffect,
-	useState,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 
@@ -37,24 +31,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const [profile, setProfile] = useState<Profile | null>(null);
 	const [loading, setLoading] = useState(true);
 
+	// Use ref to ensure we only initialize once
+	const initialized = useRef(false);
+	// Get singleton supabase client
 	const supabase = createClient();
 
-	const fetchProfile = useCallback(
-		async (userId: string) => {
-			const { data } = await supabase
-				.from("users")
-				.select("*")
-				.eq("id", userId)
-				.single();
-
-			setProfile(data);
-		},
-		[supabase],
-	);
+	const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+		const { data } = await supabase
+			.from("users")
+			.select("*")
+			.eq("id", userId)
+			.single();
+		return data;
+	}, [supabase]);
 
 	const refreshProfile = useCallback(async () => {
 		if (user) {
-			await fetchProfile(user.id);
+			const profile = await fetchProfile(user.id);
+			setProfile(profile);
 		}
 	}, [user, fetchProfile]);
 
@@ -65,41 +59,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	}, [supabase]);
 
 	useEffect(() => {
-		// Get initial session
-		supabase.auth.getSession().then(({ data: { session } }) => {
-			setUser(session?.user ?? null);
+		// Prevent double initialization (React StrictMode)
+		if (initialized.current) return;
+		initialized.current = true;
+
+		// Initialize auth state
+		const initAuth = async () => {
+			const { data: { session } } = await supabase.auth.getSession();
+
 			if (session?.user) {
-				fetchProfile(session.user.id);
+				setUser(session.user);
+				// Wait for profile to load before setting loading to false
+				const profile = await fetchProfile(session.user.id);
+				setProfile(profile);
 			}
+
 			setLoading(false);
-		});
+		};
+
+		initAuth();
 
 		// Listen for auth changes
-		const {
-			data: { subscription },
-		} = supabase.auth.onAuthStateChange(async (_event, session) => {
-			setUser(session?.user ?? null);
+		const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+			// Skip initial session event since we handle it above
+			if (event === 'INITIAL_SESSION') return;
+
 			if (session?.user) {
-				await fetchProfile(session.user.id);
+				setUser(session.user);
+				const profile = await fetchProfile(session.user.id);
+				setProfile(profile);
 			} else {
+				setUser(null);
 				setProfile(null);
 			}
-			setLoading(false);
 		});
 
 		return () => subscription.unsubscribe();
-	}, [fetchProfile, supabase]);
+	}, [supabase, fetchProfile]);
 
 	return (
-		<AuthContext.Provider
-			value={{
-				user,
-				profile,
-				loading,
-				signOut,
-				refreshProfile,
-			}}
-		>
+		<AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile }}>
 			{children}
 		</AuthContext.Provider>
 	);

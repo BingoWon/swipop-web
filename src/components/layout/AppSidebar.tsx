@@ -128,39 +128,41 @@ export function AppSidebar({ isCompact = false }: AppSidebarProps) {
 					<ThemeToggle />
 				</div>
 
-				{user ? (
-					<Button
-						fullWidth={!isCompact}
-						className="text-default-500 data-[hover=true]:text-foreground justify-start"
-						startContent={
-							<Icon
-								className="text-default-500"
-								icon="solar:logout-2-bold"
-								width={24}
-							/>
-						}
-						variant="light"
-						onPress={signOut}
-					>
-						{!isCompact && "Sign Out"}
-					</Button>
-				) : (
-					<Button
-						as={Link}
-						href="/login"
-						fullWidth={!isCompact}
-						className="text-default-500 data-[hover=true]:text-foreground justify-start"
-						startContent={
-							<Icon
-								className="text-default-500"
-								icon="solar:login-2-bold"
-								width={24}
-							/>
-						}
-						variant="light"
-					>
-						{!isCompact && "Sign In"}
-					</Button>
+				{!loading && (
+					user ? (
+						<Button
+							fullWidth={!isCompact}
+							className="text-default-500 data-[hover=true]:text-foreground justify-start"
+							startContent={
+								<Icon
+									className="text-default-500"
+									icon="solar:logout-2-bold"
+									width={24}
+								/>
+							}
+							variant="light"
+							onPress={signOut}
+						>
+							{!isCompact && "Sign Out"}
+						</Button>
+					) : (
+						<Button
+							as={Link}
+							href="/login"
+							fullWidth={!isCompact}
+							className="text-default-500 data-[hover=true]:text-foreground justify-start"
+							startContent={
+								<Icon
+									className="text-default-500"
+									icon="solar:login-2-bold"
+									width={24}
+								/>
+							}
+							variant="light"
+						>
+							{!isCompact && "Sign In"}
+						</Button>
+					)
 				)}
 			</div>
 		</div>

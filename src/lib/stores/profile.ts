@@ -95,7 +95,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
 
             // Calculate total likes on user's projects
             const projects = projectsResult.data || [];
-            const likeCount = projects.reduce((sum, p) => sum + (p.like_count || 0), 0);
+            const likeCount = projects.reduce((sum: number, p: { like_count?: number | null }) => sum + (p.like_count || 0), 0);
 
             set((state) => ({
                 profiles: {

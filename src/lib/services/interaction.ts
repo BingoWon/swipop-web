@@ -83,7 +83,7 @@ export const InteractionService = {
 			.select("like_count")
 			.eq("user_id", userId)
 			.eq("is_published", true);
-		return data?.reduce((sum, p) => sum + (p.like_count || 0), 0) ?? 0;
+		return data?.reduce((sum: number, p: { like_count: number | null }) => sum + (p.like_count || 0), 0) ?? 0;
 	},
 
 	// Fetch project IDs liked by a user (lightweight, for hydrating like state)
@@ -92,7 +92,7 @@ export const InteractionService = {
 			.from("likes")
 			.select("project_id")
 			.eq("user_id", userId);
-		return data?.map((d) => d.project_id) ?? [];
+		return data?.map((d: { project_id: string }) => d.project_id) ?? [];
 	},
 
 	// Fetch projects liked by a user
@@ -103,7 +103,7 @@ export const InteractionService = {
 			.eq("user_id", userId)
 			.order("created_at", { ascending: false });
 		if (!data) return [];
-		return data.map((d) => d.project).filter(Boolean) as unknown as Project[];
+		return data.map((d: { project: unknown }) => d.project).filter(Boolean) as unknown as Project[];
 	},
 
 	// Fetch projects collected by a user
@@ -114,6 +114,6 @@ export const InteractionService = {
 			.eq("user_id", userId)
 			.order("created_at", { ascending: false });
 		if (!data) return [];
-		return data.map((d) => d.project).filter(Boolean) as unknown as Project[];
+		return data.map((d: { project: unknown }) => d.project).filter(Boolean) as unknown as Project[];
 	},
 };
